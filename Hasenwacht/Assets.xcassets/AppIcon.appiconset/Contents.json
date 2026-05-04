@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "hasenwacht_AppIcon_1024.png",
+      "filename" : "hasenwacht_AppIcon_Light_1024.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,6 +13,7 @@
           "value" : "dark"
         }
       ],
+      "filename" : "hasenwacht_AppIcon_Dark_1024.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -24,6 +25,7 @@
           "value" : "tinted"
         }
       ],
+      "filename" : "hasenwacht_AppIcon_Tinted_1024.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
