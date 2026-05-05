@@ -3,45 +3,61 @@
 //  Hasenwacht
 //
 //  Hauptscreen: Liste der nächsten 7 Werktage mit Status pro Tag.
+//  Daten kommen reaktiv aus Firestore via LunchDaysViewModel.
 //
 
 import SwiftUI
 
 struct LunchOverviewView: View {
-    @State private var days: [DayViewModel] = MockData.mockDays()
+
+    // MARK: - Environment
+
+    @Environment(CurrentUserService.self) private var currentUserService
+
+    // MARK: - State
+
+    @StateObject private var viewModel = LunchDaysViewModel.shared
+    
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach($days) { $day in
-                    NavigationLink(value: day) {
-                        DayRowView(day: day) {
-                            toggleAttendance(for: $day)
-                        }
+            Group {
+                if viewModel.isLoading && viewModel.days.isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let errorMessage = viewModel.errorMessage {
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.orange)
+                        Text(errorMessage)
+                            .multilineTextAlignment(.center)
+                            .padding()
                     }
+                } else {
+                    daysList
                 }
             }
-            .listStyle(.plain)
             .navigationTitle("Mittagessen")
-            .navigationDestination(for: DayViewModel.self) { day in
-                if let index = days.firstIndex(where: { $0.id == day.id }) {
-                    LunchDetailView(day: $days[index])
-                }
-            }
         }
     }
 
-    /// Toggle-Logik für Mock-Daten.
-    /// Später ersetzt durch echten Service-Aufruf.
-    private func toggleAttendance(for day: Binding<DayViewModel>) {
-        let userId = MockData.currentUser.id ?? ""
-        let current = MockData.currentUser
-        if day.wrappedValue.currentUserAttending {
-            day.wrappedValue.attendees.removeAll { $0.id == userId }
-            day.wrappedValue.absentees.append(current)
-        } else {
-            day.wrappedValue.absentees.removeAll { $0.id == userId }
-            day.wrappedValue.attendees.append(current)
+    // MARK: - Days-Liste
+
+    private var daysList: some View {
+        List {
+            ForEach(viewModel.days) { day in
+                NavigationLink(value: day) {
+                    DayRowView(day: day) {
+                        Task { await viewModel.toggleAttendance(for: day.date) }
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
+        .navigationDestination(for: DayViewModel.self) { day in
+            LunchDetailView(date: day.date)
         }
     }
 }
@@ -101,8 +117,4 @@ struct DayRowView: View {
             .buttonStyle(.plain)
         }
     }
-}
-
-#Preview {
-    LunchOverviewView()
 }

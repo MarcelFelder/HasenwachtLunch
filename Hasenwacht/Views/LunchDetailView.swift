@@ -3,34 +3,55 @@
 //  Hasenwacht
 //
 //  Detail-Ansicht eines Tages mit Teilnehmerliste.
+//  Reaktiv: Daten kommen direkt aus dem LunchDaysViewModel.
 //
 
 import SwiftUI
 
 struct LunchDetailView: View {
-    @Binding var day: DayViewModel
+
+    // MARK: - Input
+
+    let date: Date
+
+    // MARK: - ViewModel
+
+    @ObservedObject private var viewModel = LunchDaysViewModel.shared
+
+    // MARK: - Computed
+
+    private var day: DayViewModel? {
+        viewModel.days.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+    }
+
+    // MARK: - Body
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                statusCard
+            if let day {
+                VStack(spacing: 24) {
+                    statusCard(day: day)
 
-                if day.isHoliday && !day.lunchDay.forceLunch {
-                    holidayCard
-                } else {
-                    attendeesSection
-                    absenteesSection
+                    if day.isHoliday && !day.lunchDay.forceLunch {
+                        holidayCard(day: day)
+                    } else {
+                        attendeesSection(day: day)
+                        absenteesSection(day: day)
+                    }
                 }
+                .padding()
+            } else {
+                ProgressView()
+                    .padding()
             }
-            .padding()
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack {
-                    Text(day.date.weekdayName())
+                    Text(date.weekdayName())
                         .font(.headline)
-                    Text(day.date.formattedLong())
+                    Text(date.formattedLong())
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -40,13 +61,15 @@ struct LunchDetailView: View {
 
     // MARK: - Status-Karte
 
-    private var statusCard: some View {
+    private func statusCard(day: DayViewModel) -> some View {
         VStack(spacing: 16) {
             Text(day.currentUserAttending ? "Du bist dabei" : "Du bist nicht dabei")
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            Button(action: toggleAttendance) {
+            Button {
+                Task { await viewModel.toggleAttendance(for: day.date) }
+            } label: {
                 HStack {
                     Image(systemName: day.currentUserAttending
                           ? "xmark.circle.fill"
@@ -70,7 +93,7 @@ struct LunchDetailView: View {
 
     // MARK: - Feiertags-Hinweis
 
-    private var holidayCard: some View {
+    private func holidayCard(day: DayViewModel) -> some View {
         VStack(spacing: 8) {
             Image(systemName: "calendar.badge.exclamationmark")
                 .font(.largeTitle)
@@ -83,10 +106,12 @@ struct LunchDetailView: View {
                 .multilineTextAlignment(.center)
 
             Button("Mittagessen trotzdem aktivieren") {
-                // Logik kommt mit dem Service-Layer
+                // Logik kommt mit Phase 4
             }
             .buttonStyle(.borderedProminent)
             .padding(.top, 8)
+            .disabled(true)
+            .opacity(0.5)
         }
         .padding()
         .frame(maxWidth: .infinity)
@@ -96,7 +121,7 @@ struct LunchDetailView: View {
 
     // MARK: - Teilnehmerlisten
 
-    private var attendeesSection: some View {
+    private func attendeesSection(day: DayViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Dabei")
@@ -107,8 +132,15 @@ struct LunchDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            ForEach(day.attendees) { user in
-                UserRowView(user: user)
+            if day.attendees.isEmpty {
+                Text("Niemand dabei.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(day.attendees) { user in
+                    UserRowView(user: user)
+                }
             }
         }
         .padding()
@@ -116,7 +148,7 @@ struct LunchDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
-    private var absenteesSection: some View {
+    private func absenteesSection(day: DayViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Nicht dabei")
@@ -127,28 +159,21 @@ struct LunchDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            ForEach(day.absentees) { user in
-                UserRowView(user: user)
-                    .opacity(0.6)
+            if day.absentees.isEmpty {
+                Text("Alle dabei.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(day.absentees) { user in
+                    UserRowView(user: user)
+                        .opacity(0.6)
+                }
             }
         }
         .padding()
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 18))
-    }
-
-    // MARK: - Toggle-Logik
-
-    private func toggleAttendance() {
-        let userId = MockData.currentUser.id ?? ""
-        let current = MockData.currentUser
-        if day.currentUserAttending {
-            day.attendees.removeAll { $0.id == userId }
-            day.absentees.append(current)
-        } else {
-            day.absentees.removeAll { $0.id == userId }
-            day.attendees.append(current)
-        }
     }
 }
 
@@ -172,11 +197,5 @@ struct UserRowView: View {
 
             Spacer()
         }
-    }
-}
-
-#Preview {
-    NavigationStack {
-        LunchDetailView(day: .constant(MockData.mockDays()[0]))
     }
 }

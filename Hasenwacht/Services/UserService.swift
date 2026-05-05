@@ -16,7 +16,7 @@ final class UserService {
     // MARK: - Singleton
 
     static let shared = UserService()
-    private init() {}  // verhindert, dass jemand anderes eine Instanz erzeugt
+    private init() {}
 
     // MARK: - Firestore-Referenz
 
@@ -53,6 +53,23 @@ final class UserService {
         let snapshot = try await usersCollection.getDocuments()
         return try snapshot.documents.compactMap { document in
             try document.data(as: User.self)
+        }
+    }
+
+    // MARK: - Listener für alle User
+
+    /// Hört auf Änderungen in der gesamten User-Collection.
+    /// Wird bei jeder Änderung gefeuert (neuer User, geänderter Name, etc.).
+    func observeAllUsers(onChange: @escaping ([User]) -> Void) -> ListenerRegistration {
+        return usersCollection.addSnapshotListener { snapshot, error in
+            guard let documents = snapshot?.documents else {
+                onChange([])
+                return
+            }
+            let users = documents.compactMap { document in
+                try? document.data(as: User.self)
+            }
+            onChange(users)
         }
     }
 }

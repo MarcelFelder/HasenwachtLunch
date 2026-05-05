@@ -76,12 +76,15 @@ struct RootView: View {
 
     private func handleAuthChange(userId: String?) {
         if let userId {
-            // User ist eingeloggt – Profil laden
             Task {
                 await currentUserService.loadProfile(userId: userId)
+                await MainActor.run {
+                    LunchDaysViewModel.shared.updateUserId(userId)
+                    LunchDaysViewModel.shared.start()
+                }
             }
         } else {
-            // User ist ausgeloggt – State aufräumen
+            LunchDaysViewModel.shared.stop()
             currentUserService.clear()
         }
     }

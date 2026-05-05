@@ -51,7 +51,7 @@ final class AuthService: NSObject {
     /// Startet den Auth-State-Listener.
     /// MUSS nach FirebaseApp.configure() aufgerufen werden, sonst crasht die App.
     func start() {
-        Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        _ = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             self?.currentUserId = user?.uid
             self?.didCheckInitialAuth = true
         }
