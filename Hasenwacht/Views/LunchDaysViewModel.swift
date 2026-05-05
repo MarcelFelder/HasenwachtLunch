@@ -28,10 +28,17 @@ final class LunchDaysViewModel: ObservableObject {
     
     private var allUsers: [User] = []
     private var attendances: [Attendance] = []
+    private var lunchDays: [LunchDay] = []
     private var currentUserId: String = ""
+
+    private let holidayService = HolidayService()
+    
+    /// Anzahl Werktage, die in der Tagesübersicht angezeigt werden.
+    private let workdayWindowSize = 12
 
     private var usersListener: ListenerRegistration?
     private var attendancesListener: ListenerRegistration?
+    private var lunchDaysListener: ListenerRegistration?
 
     // MARK: - Init
 
@@ -52,6 +59,7 @@ final class LunchDaysViewModel: ObservableObject {
         isLoading = true
         startUsersListener()
         startAttendancesListener()
+        startLunchDaysListener()
     }
 
     /// Stoppt die Listener. Wichtig beim Verlassen des Screens, sonst Memory-Leak.
@@ -60,9 +68,12 @@ final class LunchDaysViewModel: ObservableObject {
         usersListener = nil
         attendancesListener?.remove()
         attendancesListener = nil
+        lunchDaysListener?.remove()
+        lunchDaysListener = nil
         days = []
         allUsers = []
         attendances = []
+        lunchDays = []
         isLoading = true
     }
 
@@ -83,7 +94,7 @@ final class LunchDaysViewModel: ObservableObject {
     }
 
     private func startAttendancesListener() {
-        let workdays = Self.nextWorkdays(count: 7)
+        let workdays = Self.nextWorkdays(count: workdayWindowSize)
         guard let firstDate = workdays.first,
               let lastDate = workdays.last else { return }
 
@@ -100,12 +111,29 @@ final class LunchDaysViewModel: ObservableObject {
             }
         }
     }
+    
+    private func startLunchDaysListener() {
+        let workdays = Self.nextWorkdays(count: workdayWindowSize)
+        guard let firstDate = workdays.first,
+              let lastDate = workdays.last else { return }
+
+        lunchDaysListener = LunchDayService.shared.observeLunchDays(
+            from: firstDate,
+            to: lastDate
+        ) { [weak self] lunchDays in
+            guard let self else { return }
+            Task { @MainActor in
+                self.lunchDays = lunchDays
+                self.rebuildDays()
+            }
+        }
+    }
 
     // MARK: - Day-Berechnung
 
     /// Baut die DayViewModels aus den aktuellen User- und Attendance-Daten neu auf.
     private func rebuildDays() {
-        let workdays = Self.nextWorkdays(count: 7)
+        let workdays = Self.nextWorkdays(count: workdayWindowSize)
         let newDays = workdays.map { date in
             buildDayViewModel(for: date)
         }
@@ -120,6 +148,20 @@ final class LunchDaysViewModel: ObservableObject {
     private func buildDayViewModel(for date: Date) -> DayViewModel {
         let calendar = Calendar.current
 
+        // 1. Feiertag-Info zuerst bestimmen — sie beeinflusst alles weitere.
+        let holiday = holidayService.holiday(for: date)
+
+        // 2. Override aus Firestore prüfen: Wurde dieser Tag manuell aktiviert?
+        let lunchDayOverride = lunchDays.first { entry in
+            calendar.isDate(entry.date, inSameDayAs: date)
+        }
+        let forceLunch = lunchDayOverride?.forceLunch ?? false
+
+        // 3. Findet überhaupt Mittagessen statt?
+        //    Normaler Werktag: ja. Feiertag: nur wenn forceLunch.
+        let isLunchHappening = (holiday == nil) || forceLunch
+
+        // 4. Attendances für diesen Tag filtern.
         let attendancesForDay = attendances.filter { attendance in
             calendar.isDate(attendance.date, inSameDayAs: date)
         }
@@ -130,23 +172,33 @@ final class LunchDaysViewModel: ObservableObject {
                 .map { $0.userId }
         )
 
-        let attendees = allUsers.filter { user in
-            guard let userId = user.id else { return false }
-            return !optedOutUserIds.contains(userId)
+        // 5. Teilnehmerlisten aufbauen.
+        let attendees: [User]
+        let absentees: [User]
+
+        if isLunchHappening {
+            attendees = allUsers.filter { user in
+                guard let userId = user.id else { return false }
+                return !optedOutUserIds.contains(userId)
+            }
+            absentees = allUsers.filter { user in
+                guard let userId = user.id else { return false }
+                return optedOutUserIds.contains(userId)
+            }
+        } else {
+            // Feiertag ohne forceLunch: niemand isst.
+            attendees = []
+            absentees = allUsers
         }
 
-        let absentees = allUsers.filter { user in
-            guard let userId = user.id else { return false }
-            return optedOutUserIds.contains(userId)
-        }
-
+        // 6. LunchDay-Objekt zusammenbauen.
         let lunchDay = LunchDay(
-            id: nil,
+            id: lunchDayOverride?.id,
             date: date,
-            isHoliday: false,
-            holidayName: nil,
-            forceLunch: false,
-            activatedBy: nil
+            isHoliday: holiday != nil,
+            holidayName: holiday?.name,
+            forceLunch: forceLunch,
+            activatedBy: lunchDayOverride?.activatedBy
         )
 
         return DayViewModel(
@@ -162,6 +214,12 @@ final class LunchDaysViewModel: ObservableObject {
 
     /// Wechselt den Anwesenheitsstatus des aktuellen Users für den gegebenen Tag.
     func toggleAttendance(for date: Date) async {
+        // Defense in Depth: UI sollte den Tap schon blockieren, aber wir
+        // verifizieren hier nochmal, falls jemand z.B. via Notification rein kommt.
+        if LunchDay.isLocked(for: date, now: Date()) {
+            return
+        }
+
         let isCurrentlyAttending = days
             .first { Calendar.current.isDate($0.date, inSameDayAs: date) }?
             .currentUserAttending ?? true
@@ -175,6 +233,26 @@ final class LunchDaysViewModel: ObservableObject {
         } catch {
             await MainActor.run {
                 errorMessage = "Status konnte nicht aktualisiert werden: \(error.localizedDescription)"
+            }
+        }
+    }
+    
+    // MARK: - Override-Aktion
+
+    /// Aktiviert das Mittagessen an einem Feiertag.
+    /// Schreibt ein lunchDays-Dokument mit forceLunch = true.
+    func activateLunchForHoliday(date: Date) async {
+        let holiday = holidayService.holiday(for: date)
+
+        do {
+            try await LunchDayService.shared.activateLunch(
+                for: date,
+                userId: currentUserId,
+                holidayName: holiday?.name
+            )
+        } catch {
+            await MainActor.run {
+                errorMessage = "Mittagessen konnte nicht aktiviert werden: \(error.localizedDescription)"
             }
         }
     }

@@ -67,6 +67,12 @@ struct LunchDetailView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
 
+            if day.lunchDay.isLocked {
+                Text(LunchDay.lockedMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
             Button {
                 Task { await viewModel.toggleAttendance(for: day.date) }
             } label: {
@@ -83,8 +89,8 @@ struct LunchDetailView: View {
                 .background(day.currentUserAttending ? .red : .green)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
-            .disabled(day.isHoliday && !day.lunchDay.forceLunch)
-            .opacity((day.isHoliday && !day.lunchDay.forceLunch) ? 0.5 : 1.0)
+            .disabled((day.isHoliday && !day.lunchDay.forceLunch) || day.lunchDay.isLocked)
+            .opacity(((day.isHoliday && !day.lunchDay.forceLunch) || day.lunchDay.isLocked) ? 0.5 : 1.0)
         }
         .padding()
         .background(.ultraThinMaterial)
@@ -106,12 +112,10 @@ struct LunchDetailView: View {
                 .multilineTextAlignment(.center)
 
             Button("Mittagessen trotzdem aktivieren") {
-                // Logik kommt mit Phase 4
+                Task { await viewModel.activateLunchForHoliday(date: day.date) }
             }
             .buttonStyle(.borderedProminent)
             .padding(.top, 8)
-            .disabled(true)
-            .opacity(0.5)
         }
         .padding()
         .frame(maxWidth: .infinity)

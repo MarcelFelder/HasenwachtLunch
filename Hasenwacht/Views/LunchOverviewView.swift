@@ -73,15 +73,37 @@ struct DayRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(day.date.weekdayName())
                     .font(.headline)
-                    .foregroundStyle(day.isHoliday ? .secondary : .primary)
-                Text(day.date.formattedShort())
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle((day.isHoliday && !day.lunchDay.forceLunch) ? .secondary : .primary)
+
+                HStack(spacing: 6) {
+                    Text(day.date.formattedShort())
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    // Feiertags-Badge nur bei aktiviertem Feiertag anzeigen
+                    if day.isHoliday && day.lunchDay.forceLunch, let name = day.holidayName {
+                        Text(name)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(Color.orange.opacity(0.15))
+                            .foregroundStyle(.orange)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                }
+
+                // Inline-Hinweis bei überschrittener Deadline
+                if day.lunchDay.isLocked {
+                    Text(LunchDay.lockedMessage)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
             }
 
             Spacer()
 
-            if day.isHoliday {
+            if day.isHoliday && !day.lunchDay.forceLunch {
                 holidayBadge
             } else {
                 attendanceInfo
@@ -115,6 +137,8 @@ struct DayRowView: View {
                     .foregroundStyle(day.currentUserAttending ? .green : .red)
             }
             .buttonStyle(.plain)
+            .disabled(day.lunchDay.isLocked)
+            .opacity(day.lunchDay.isLocked ? 0.4 : 1.0)
         }
     }
 }
