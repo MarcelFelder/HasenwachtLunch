@@ -2,82 +2,53 @@
 //  MockData.swift
 //  Hasenwacht
 //
-//  Datenmodelle und Mock-Daten für die UI-Entwicklung.
-//  Wird später durch echte Firestore-Daten ersetzt.
+//  Mock-Daten für die UI-Entwicklung.
+//  Verwendet die echten Datenmodelle (User, LunchDay, Attendance),
+//  damit der Wechsel auf Firestore später nahtlos funktioniert.
 //
 
 import Foundation
-
-// MARK: - Datenmodelle
-
-/// Repräsentiert einen einzelnen Bewohner / User
-struct Person: Identifiable, Hashable {
-    let id: String
-    let firstName: String
-    let lastName: String
-    let avatarColor: String  // Hex-Farbe für Default-Avatar
-
-    var fullName: String { "\(firstName) \(lastName)" }
-    var initials: String {
-        let first = firstName.first.map { String($0) } ?? ""
-        let last = lastName.first.map { String($0) } ?? ""
-        return first + last
-    }
-}
-
-/// Repräsentiert einen einzelnen Mittagstag
-struct LunchDay: Identifiable, Hashable {
-    let id = UUID()
-    let date: Date
-    let isHoliday: Bool
-    let holidayName: String?
-    let attendees: [Person]
-    let absentees: [Person]
-    let totalPeople: Int  // Anzahl Bewohner gesamt
-
-    /// Ist der angemeldete User dabei? (Für MVP fest auf true gesetzt – später dynamisch)
-    var currentUserAttending: Bool
-
-    var attendingCount: Int { attendees.count }
-}
+import SwiftUI
 
 // MARK: - Mock-Daten
 
 enum MockData {
 
-    /// Der "ich" – also der angemeldete User
-    static let currentUser = Person(
+    /// Der aktuell eingeloggte Mock-User
+    static let currentUser = User(
         id: "user-me",
         firstName: "Du",
-        lastName: "",
-        avatarColor: "#D9C9A8"
+        lastName: "Hasenwacht",
+        photoURL: nil,
+        createdAt: Date()
     )
 
-    /// Die übrigen Bewohner
-    static let otherResidents: [Person] = [
-        Person(id: "u1", firstName: "Anna",   lastName: "Müller",   avatarColor: "#B85A3E"),
-        Person(id: "u2", firstName: "Marco",  lastName: "Bühler",   avatarColor: "#3D5A4A"),
-        Person(id: "u3", firstName: "Lea",    lastName: "Keller",   avatarColor: "#7A3E52"),
-        Person(id: "u4", firstName: "Tobias", lastName: "Schneider", avatarColor: "#2C3E5C"),
-        Person(id: "u5", firstName: "Sara",   lastName: "Weber",    avatarColor: "#A8B89A")
+    /// Die übrigen Bewohner als Mock
+    static let otherUsers: [User] = [
+        User(id: "u1", firstName: "Anna",   lastName: "Müller",    photoURL: nil, createdAt: Date()),
+        User(id: "u2", firstName: "Marco",  lastName: "Bühler",    photoURL: nil, createdAt: Date()),
+        User(id: "u3", firstName: "Lea",    lastName: "Keller",    photoURL: nil, createdAt: Date()),
+        User(id: "u4", firstName: "Tobias", lastName: "Schneider", photoURL: nil, createdAt: Date()),
+        User(id: "u5", firstName: "Sara",   lastName: "Weber",     photoURL: nil, createdAt: Date())
     ]
 
-    static var allResidents: [Person] {
-        [currentUser] + otherResidents
+    /// Alle User inkl. eingeloggter User
+    static var allUsers: [User] {
+        [currentUser] + otherUsers
     }
 
-    /// Die nächsten 7 Werktage als Mock
-    static func nextWorkdays() -> [LunchDay] {
+    /// Erzeugt eine Liste der nächsten 7 Werktage als DayViewModel
+    static func mockDays() -> [DayViewModel] {
         let calendar = Calendar.current
-        var days: [LunchDay] = []
+        var days: [DayViewModel] = []
         var date = Date()
         var added = 0
 
         while added < 7 {
             let weekday = calendar.component(.weekday, from: date)
-            // 1 = Sonntag, 7 = Samstag (US-Konvention) → Mo-Fr = 2..6
+            // Mo-Fr = 2..6 (1=Sonntag, 7=Samstag)
             if weekday >= 2 && weekday <= 6 {
-                days.append(makeDay(for: date, index: added))
+                days.append(makeMockDay(date: date, index: added))
                 added += 1
             }
             date = calendar.date(byAdding: .day, value: 1, to: date)!
@@ -85,40 +56,103 @@ enum MockData {
         return days
     }
 
-    private static func makeDay(for date: Date, index: Int) -> LunchDay {
-        // Variation in den Mock-Daten, damit es spannend aussieht
-        let allOthers = otherResidents
+    private static func makeMockDay(date: Date, index: Int) -> DayViewModel {
+        let isHoliday = (index == 3)
 
-        let isHoliday = (index == 3)  // 4. Tag als Beispiel-Feiertag
+        let lunchDay = LunchDay(
+            id: nil,
+            date: date,
+            isHoliday: isHoliday,
+            holidayName: isHoliday ? "Auffahrt" : nil,
+            forceLunch: false,
+            activatedBy: nil
+        )
+
         if isHoliday {
-            return LunchDay(
-                date: date,
-                isHoliday: true,
-                holidayName: "Auffahrt",
+            return DayViewModel(
+                lunchDay: lunchDay,
                 attendees: [],
                 absentees: [],
-                totalPeople: allResidents.count,
-                currentUserAttending: false
+                allUsers: allUsers,
+                currentUserId: currentUser.id ?? ""
             )
         }
 
-        // Mock: Pro Tag andere Verteilung
-        let attendingOthers = Array(allOthers.prefix(allOthers.count - (index % 3)))
-        let absentOthers = Array(allOthers.suffix(index % 3))
-        let userAttends = (index != 1)  // An Tag 2 mal nicht da
+        // Variation: An Tag 1 ist current-User nicht da
+        let currentUserAttending = (index != 1)
+        let absentOtherCount = index % 3
+        let absentOthers = Array(otherUsers.suffix(absentOtherCount))
+        let attendingOthers = Array(otherUsers.prefix(otherUsers.count - absentOtherCount))
 
-        let attendees = userAttends ? [currentUser] + attendingOthers : attendingOthers
-        let absentees = userAttends ? absentOthers : [currentUser] + absentOthers
+        let attendees = currentUserAttending ? [currentUser] + attendingOthers : attendingOthers
+        let absentees = currentUserAttending ? absentOthers : [currentUser] + absentOthers
 
-        return LunchDay(
-            date: date,
-            isHoliday: false,
-            holidayName: nil,
+        return DayViewModel(
+            lunchDay: lunchDay,
             attendees: attendees,
             absentees: absentees,
-            totalPeople: allResidents.count,
-            currentUserAttending: userAttends
+            allUsers: allUsers,
+            currentUserId: currentUser.id ?? ""
         )
+    }
+}
+
+// MARK: - DayViewModel
+
+/// View-spezifische Repräsentation eines Tages.
+/// Fügt LunchDay-Daten mit Teilnehmer-Daten zusammen, damit Views
+/// einfach darauf zugreifen können, ohne mehrere Listen zu joinen.
+struct DayViewModel: Identifiable, Hashable {
+    let lunchDay: LunchDay
+    var attendees: [User]
+    var absentees: [User]
+    let allUsers: [User]
+    let currentUserId: String
+
+    var id: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: lunchDay.date)
+    }
+
+    var date: Date { lunchDay.date }
+    var isHoliday: Bool { lunchDay.isHoliday }
+    var holidayName: String? { lunchDay.holidayName }
+    var hasLunch: Bool { lunchDay.hasLunch }
+
+    var attendingCount: Int { attendees.count }
+    var totalCount: Int { allUsers.count }
+
+    var currentUserAttending: Bool {
+        attendees.contains { $0.id == currentUserId }
+    }
+
+    static func == (lhs: DayViewModel, rhs: DayViewModel) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+// MARK: - Avatar-Farbe deterministisch aus User-ID
+
+extension User {
+    /// Erzeugt eine stabile Farbe aus der User-ID.
+    /// Gleiche ID = gleiche Farbe, ohne dass die Farbe gespeichert werden muss.
+    var avatarColor: Color {
+        let palette: [Color] = [
+            Color(red: 0.72, green: 0.35, blue: 0.24),  // Terrakotta
+            Color(red: 0.24, green: 0.35, blue: 0.29),  // Tannengrün
+            Color(red: 0.48, green: 0.24, blue: 0.32),  // Bordeaux
+            Color(red: 0.17, green: 0.24, blue: 0.36),  // Marineblau
+            Color(red: 0.66, green: 0.72, blue: 0.60),  // Salbei
+            Color(red: 0.85, green: 0.79, blue: 0.66)   // Sand
+        ]
+        let userId = id ?? "default"
+        let hash = abs(userId.hashValue)
+        return palette[hash % palette.count]
     }
 }
 

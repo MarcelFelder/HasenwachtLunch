@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct LunchOverviewView: View {
-    @State private var days: [LunchDay] = MockData.nextWorkdays()
+    @State private var days: [DayViewModel] = MockData.mockDays()
 
     var body: some View {
         NavigationStack {
@@ -16,19 +16,32 @@ struct LunchOverviewView: View {
                 ForEach($days) { $day in
                     NavigationLink(value: day) {
                         DayRowView(day: day) {
-                            // Quick-Toggle direkt aus der Liste heraus
-                            day.currentUserAttending.toggle()
+                            toggleAttendance(for: $day)
                         }
                     }
                 }
             }
             .listStyle(.plain)
             .navigationTitle("Mittagessen")
-            .navigationDestination(for: LunchDay.self) { day in
+            .navigationDestination(for: DayViewModel.self) { day in
                 if let index = days.firstIndex(where: { $0.id == day.id }) {
                     LunchDetailView(day: $days[index])
                 }
             }
+        }
+    }
+
+    /// Toggle-Logik für Mock-Daten.
+    /// Später ersetzt durch echten Service-Aufruf.
+    private func toggleAttendance(for day: Binding<DayViewModel>) {
+        let userId = MockData.currentUser.id ?? ""
+        let current = MockData.currentUser
+        if day.wrappedValue.currentUserAttending {
+            day.wrappedValue.attendees.removeAll { $0.id == userId }
+            day.wrappedValue.absentees.append(current)
+        } else {
+            day.wrappedValue.absentees.removeAll { $0.id == userId }
+            day.wrappedValue.attendees.append(current)
         }
     }
 }
@@ -36,12 +49,11 @@ struct LunchOverviewView: View {
 // MARK: - Einzelne Zeile in der Tagesliste
 
 struct DayRowView: View {
-    let day: LunchDay
+    let day: DayViewModel
     let onToggle: () -> Void
 
     var body: some View {
         HStack(spacing: 16) {
-            // Datum-Block links
             VStack(alignment: .leading, spacing: 2) {
                 Text(day.date.weekdayName())
                     .font(.headline)
@@ -53,7 +65,6 @@ struct DayRowView: View {
 
             Spacer()
 
-            // Status-Anzeige rechts
             if day.isHoliday {
                 holidayBadge
             } else {
@@ -76,12 +87,10 @@ struct DayRowView: View {
 
     private var attendanceInfo: some View {
         HStack(spacing: 12) {
-            // Anzahl-Anzeige
-            Text("\(day.attendingCount) von \(day.totalPeople)")
+            Text("\(day.attendingCount) von \(day.totalCount)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            // Eigener Status als Toggle-Button
             Button(action: onToggle) {
                 Image(systemName: day.currentUserAttending
                       ? "checkmark.circle.fill"
