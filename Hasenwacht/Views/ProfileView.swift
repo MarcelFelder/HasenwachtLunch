@@ -8,9 +8,32 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @State private var firstName: String = "Max"
-    @State private var lastName: String = "Hasenwacht"
+
+    // MARK: - Environment
+
+    @Environment(CurrentUserService.self) private var currentUserService
+
+    // MARK: - State
+
     @State private var notificationsEnabled: Bool = true
+    @State private var showLogoutConfirmation: Bool = false
+    @State private var logoutErrorMessage: String?
+
+    // MARK: - Computed
+
+    private var user: User? {
+        currentUserService.currentUser
+    }
+
+    private var initials: String {
+        user?.initials ?? "?"
+    }
+
+    private var displayName: String {
+        user?.fullName ?? "Unbekannt"
+    }
+
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
@@ -24,13 +47,18 @@ struct ProfileView: View {
                                 .font(.system(size: 36, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .frame(width: 100, height: 100)
-                                .background(Color(hex: "#D9C9A8"))
+                                .background(user?.avatarColor ?? .gray)
                                 .clipShape(Circle())
 
+                            Text(displayName)
+                                .font(.headline)
+
                             Button("Foto ändern") {
-                                // Später: Foto-Picker
+                                // Phase 5: Foto-Picker
                             }
                             .font(.subheadline)
+                            .disabled(true)
+                            .opacity(0.5)
                         }
                         Spacer()
                     }
@@ -38,21 +66,16 @@ struct ProfileView: View {
                     .listRowBackground(Color.clear)
                 }
 
-                // Name-Felder
-                Section("Name") {
-                    TextField("Vorname", text: $firstName)
-                    TextField("Nachname", text: $lastName)
-                }
-
-                // Einstellungen
+                // Notification-Einstellung
                 Section("Benachrichtigungen") {
                     Toggle("Reminder am Vorabend", isOn: $notificationsEnabled)
+                        .disabled(true)
                 }
 
                 // Logout
                 Section {
                     Button(role: .destructive) {
-                        // Später: echte Logout-Logik
+                        showLogoutConfirmation = true
                     } label: {
                         HStack {
                             Spacer()
@@ -61,18 +84,46 @@ struct ProfileView: View {
                         }
                     }
                 }
+
+                // Fehlermeldung bei Logout-Problemen
+                if let logoutErrorMessage {
+                    Section {
+                        Text(logoutErrorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
             }
             .navigationTitle("Profil")
+            .confirmationDialog(
+                "Wirklich abmelden?",
+                isPresented: $showLogoutConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Abmelden", role: .destructive) {
+                    performLogout()
+                }
+                Button("Abbrechen", role: .cancel) {}
+            } message: {
+                Text("Du kannst dich später jederzeit wieder anmelden.")
+            }
         }
     }
 
-    private var initials: String {
-        let first = firstName.first.map { String($0) } ?? ""
-        let last = lastName.first.map { String($0) } ?? ""
-        return first + last
+    // MARK: - Logout-Logik
+
+    private func performLogout() {
+        logoutErrorMessage = nil
+        do {
+            try AuthService.shared.signOut()
+            CurrentUserService.shared.clear()
+        } catch {
+            logoutErrorMessage = "Abmelden fehlgeschlagen: \(error.localizedDescription)"
+        }
     }
 }
 
 #Preview {
     ProfileView()
+        .environment(CurrentUserService.shared)
 }

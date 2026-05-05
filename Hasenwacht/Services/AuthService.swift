@@ -27,6 +27,12 @@ final class AuthService: NSObject {
     /// True, sobald wir den initialen Auth-Status geprüft haben.
     /// Verhindert "Login-Screen kurz aufblinken" beim App-Start.
     var didCheckInitialAuth: Bool = false
+    
+    /// Vorname und Nachname, die Apple beim ersten Login geliefert hat.
+    /// Werden beim Profil-Setup als Vorschlagswerte verwendet.
+    /// Apple liefert diese Daten nur bei der allerersten Anmeldung.
+    var pendingFirstName: String?
+    var pendingLastName: String?
 
     // MARK: - Privater State
 
@@ -87,6 +93,13 @@ final class AuthService: NSObject {
             throw AuthServiceError.invalidIdentityToken
         }
 
+        // Apple-Namen für späteres Profil-Setup zwischenspeichern.
+        // Apple liefert diese Daten nur bei der ersten Anmeldung.
+        if let fullName = appleIDCredential.fullName {
+            pendingFirstName = fullName.givenName
+            pendingLastName = fullName.familyName
+        }
+        
         let credential = OAuthProvider.appleCredential(
             withIDToken: idTokenString,
             rawNonce: nonce,
@@ -103,6 +116,8 @@ final class AuthService: NSObject {
     // MARK: - Logout
 
     func signOut() throws {
+        pendingFirstName = nil
+        pendingLastName = nil
         try Auth.auth().signOut()
     }
 }

@@ -2,7 +2,6 @@
 //  HasenwachtApp.swift
 //  Hasenwacht
 //
-//  Created by Marcel Felder on 04.05.2026.
 
 import SwiftUI
 import FirebaseCore
@@ -11,43 +10,79 @@ import FirebaseCore
 struct HasenwachtApp: App {
 
     @State private var authService: AuthService
+    @State private var currentUserService: CurrentUserService
 
     init() {
-        // 1. Firebase konfigurieren
+        // 1. Firebase konfigurieren – zwingend zuerst
         FirebaseApp.configure()
 
-        // 2. AuthService initialisieren (kein Firebase-Zugriff im init)
-        let service = AuthService.shared
+        // 2. Services initialisieren
+        let auth = AuthService.shared
+        auth.start()
 
-        // 3. Listener explizit starten – jetzt darf Firebase verwendet werden
-        service.start()
+        let currentUser = CurrentUserService.shared
 
-        // 4. SwiftUI-State setzen
-        _authService = State(initialValue: service)
+        // 3. SwiftUI-State setzen
+        _authService = State(initialValue: auth)
+        _currentUserService = State(initialValue: currentUser)
     }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(authService)
+                .environment(currentUserService)
         }
     }
 }
 
+// MARK: - Root-Routing
+
+/// Entscheidet basierend auf Auth- und Profil-Status, welcher Screen sichtbar ist.
 struct RootView: View {
 
     @Environment(AuthService.self) private var authService
+    @Environment(CurrentUserService.self) private var currentUserService
 
     var body: some View {
         Group {
             if !authService.didCheckInitialAuth {
+                // Firebase prüft noch, ob es eine bestehende Session gibt
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+
             } else if authService.currentUserId == nil {
+                // Niemand eingeloggt
                 LoginView()
+
+            } else if !currentUserService.didCheckProfile {
+                // Eingeloggt, aber Profil-Status noch nicht geprüft
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            } else if currentUserService.currentUser == nil {
+                // Eingeloggt, aber noch kein Profil – Setup zeigen
+                ProfileSetupView()
+
             } else {
-                LunchOverviewView()
+                // Eingeloggt mit Profil – Hauptansicht
+                MainTabView()
             }
+        }
+        .onChange(of: authService.currentUserId, initial: true) { _, newUserId in
+            handleAuthChange(userId: newUserId)
+        }
+    }
+
+    private func handleAuthChange(userId: String?) {
+        if let userId {
+            // User ist eingeloggt – Profil laden
+            Task {
+                await currentUserService.loadProfile(userId: userId)
+            }
+        } else {
+            // User ist ausgeloggt – State aufräumen
+            currentUserService.clear()
         }
     }
 }
