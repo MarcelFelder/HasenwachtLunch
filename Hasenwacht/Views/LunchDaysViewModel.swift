@@ -39,6 +39,10 @@ final class LunchDaysViewModel: ObservableObject {
     private var usersListener: ListenerRegistration?
     private var attendancesListener: ListenerRegistration?
     private var lunchDaysListener: ListenerRegistration?
+    
+    /// Timer für periodische Phase-Aktualisierung.
+    /// Notwendig, weil Phasenwechsel zeitbasiert sind (14:00, 12:15, Mitternacht) und SwiftUI sonst keinen Anlass zum Re-Render hat.
+    private var phaseUpdateTimer: Timer?
 
     // MARK: - Init
 
@@ -60,6 +64,7 @@ final class LunchDaysViewModel: ObservableObject {
         startUsersListener()
         startAttendancesListener()
         startLunchDaysListener()
+        startPhaseUpdateTimer()
     }
 
     /// Stoppt die Listener. Wichtig beim Verlassen des Screens, sonst Memory-Leak.
@@ -70,6 +75,8 @@ final class LunchDaysViewModel: ObservableObject {
         attendancesListener = nil
         lunchDaysListener?.remove()
         lunchDaysListener = nil
+        phaseUpdateTimer?.invalidate()
+        phaseUpdateTimer = nil
         days = []
         allUsers = []
         attendances = []
@@ -128,20 +135,60 @@ final class LunchDaysViewModel: ObservableObject {
             }
         }
     }
+    
+    /// Startet einen Timer, der jede Minute prüft, ob sich die Phase irgendeines Tages geändert hat. Wenn ja, wird rebuildDays() aufgerufen, damit SwiftUI die UI aktualisiert.
+    ///
+    /// Hintergrund: Phasen-Übergänge sind zeitbasiert (14:00, 12:15, Mitternacht). Ohne Timer würde die UI bis zum nächsten Datenwechsel oder App-Restart "eingefroren" bleiben.
+    private func startPhaseUpdateTimer() {
+        // Sofortiges Update nicht nötig — start() ruft eh schon rebuildDays() indirekt
+        // über die Listener. Ab dann jede Minute.
+        phaseUpdateTimer = Timer.scheduledTimer(
+            withTimeInterval: 60,
+            repeats: true
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                self.rebuildDaysIfPhaseChanged()
+            }
+        }
+    }
+
+    /// Prüft, ob mindestens ein Tag in der Liste seine Phase geändert hat.
+    /// Nur dann wird rebuildDays() ausgelöst — vermeidet unnötige UI-Updates.
+    private func rebuildDaysIfPhaseChanged() {
+        let now = Date()
+        let phaseChanged = days.contains { day in
+            let currentPhase = day.phase
+            let freshPhase = LunchDay.phase(for: day.date, now: now)
+            return currentPhase != freshPhase
+        }
+
+        if phaseChanged {
+            rebuildDays()
+        }
+    }
 
     // MARK: - Day-Berechnung
 
     /// Baut die DayViewModels aus den aktuellen User- und Attendance-Daten neu auf.
     private func rebuildDays() {
         let workdays = Self.nextWorkdays(count: workdayWindowSize)
-        let newDays = workdays.map { date in
+        var newDays = workdays.map { date in
             buildDayViewModel(for: date)
         }
+
+        // "Nächstes Mittagessen" markieren = erster Tag, der noch bevorsteht.
+        // Voraussetzung: heute selbst ist bereits in Phase .lunchOver, sonst
+        // ist das Badge auf "morgen" sinnlos (heute ist ja noch der Lunch-Tag).
+        let now = Date()
+        if LunchDay.phase(for: now, now: now) == .lunchOver,
+           let nextLunchIndex = newDays.firstIndex(where: { $0.phase != .lunchOver }) {
+            newDays[nextLunchIndex].isNextRelevantDay = true
+        }
+
         Task { @MainActor in
             self.days = newDays
             self.isLoading = false
-            for day in newDays {
-            }
         }
     }
 
@@ -216,7 +263,7 @@ final class LunchDaysViewModel: ObservableObject {
     func toggleAttendance(for date: Date) async {
         // Defense in Depth: UI sollte den Tap schon blockieren, aber wir
         // verifizieren hier nochmal, falls jemand z.B. via Notification rein kommt.
-        if LunchDay.isLocked(for: date, now: Date()) {
+        if LunchDay.phase(for: date, now: Date()) != .bookable {
             return
         }
 

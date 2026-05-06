@@ -12,10 +12,10 @@ struct ProfileView: View {
     // MARK: - Environment
 
     @Environment(CurrentUserService.self) private var currentUserService
+    @Environment(NotificationService.self) private var notificationService
 
     // MARK: - State
 
-    @State private var notificationsEnabled: Bool = true
     @State private var showLogoutConfirmation: Bool = false
     @State private var logoutErrorMessage: String?
 
@@ -36,6 +36,8 @@ struct ProfileView: View {
     // MARK: - Body
 
     var body: some View {
+        @Bindable var notifications = notificationService
+        
         NavigationStack {
             Form {
                 // Avatar-Bereich oben
@@ -67,31 +69,38 @@ struct ProfileView: View {
                 }
 
                 // Notification-Einstellung
-                Section("Benachrichtigungen") {
-                    Toggle("Reminder am Vorabend", isOn: $notificationsEnabled)
-                        .disabled(true)
-                }
-
-                // Logout
+                // Notification-Einstellung
                 Section {
-                    Button(role: .destructive) {
-                        showLogoutConfirmation = true
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Text("Abmelden")
-                            Spacer()
+                    Toggle("Reminder am Vorabend", isOn: $notifications.remindersEnabled)
+                        .disabled(notifications.authorizationStatus != .authorized)
+                    
+                    // Hinweis, falls Permission verweigert wurde
+                    if notifications.authorizationStatus == .denied {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Benachrichtigungen sind in den iOS-Einstellungen deaktiviert.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Button {
+                                if let url = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(url)
+                                }
+                            } label: {
+                                Text("Einstellungen öffnen")
+                                    .font(.caption)
+                            }
+                        }
+                    } else if notifications.authorizationStatus == .notDetermined {
+                        Button {
+                            Task { await notificationService.requestAuthorization() }
+                        } label: {
+                            Text("Benachrichtigungen aktivieren")
+                                .font(.caption)
                         }
                     }
-                }
-
-                // Fehlermeldung bei Logout-Problemen
-                if let logoutErrorMessage {
-                    Section {
-                        Text(logoutErrorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
-                    }
+                } header: {
+                    Text("Benachrichtigungen")
+                } footer: {
+                    Text("Du erhältst um 19:00 Uhr eine Erinnerung – nicht am Wochenende oder vor Feiertagen.")
                 }
             }
             .navigationTitle("Profil")
@@ -115,6 +124,7 @@ struct ProfileView: View {
     private func performLogout() {
         logoutErrorMessage = nil
         do {
+            NotificationService.shared.cancelAllReminders()   // ← NEU
             try AuthService.shared.signOut()
             CurrentUserService.shared.clear()
         } catch {
@@ -126,4 +136,5 @@ struct ProfileView: View {
 #Preview {
     ProfileView()
         .environment(CurrentUserService.shared)
+        .environment(NotificationService.shared)
 }

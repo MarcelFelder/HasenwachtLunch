@@ -71,7 +71,7 @@ struct DayRowView: View {
     var body: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(day.date.weekdayName())
+                Text(day.date.weekdayName)
                     .font(.headline)
                     .foregroundStyle((day.isHoliday && !day.lunchDay.forceLunch) ? .secondary : .primary)
 
@@ -90,16 +90,27 @@ struct DayRowView: View {
                             .foregroundStyle(.orange)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
+
+                    // "Nächster Tag"-Badge bei lunchOver-Phase
+                    if day.isNextRelevantDay {
+                        Text("Nächstes Mittagessen")
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(Color.blue.opacity(0.15))
+                            .foregroundStyle(.blue)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
                 }
 
-                // Inline-Hinweis bei überschrittener Deadline
-                if day.lunchDay.isLocked {
-                    Text(LunchDay.lockedMessage)
+                // Inline-Hinweis je nach Phase (locked / lunchOver)
+                if let message = day.phaseMessage {
+                    Text(message)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .padding(.top, 2)
                 }
-            }
+            }   // ← DAS war die fehlende Klammer für den VStack
 
             Spacer()
 

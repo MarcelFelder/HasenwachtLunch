@@ -16,6 +16,7 @@ struct ProfileSetupView: View {
 
     @Environment(AuthService.self) private var authService
     @Environment(CurrentUserService.self) private var currentUserService
+    @Environment(NotificationService.self) private var notificationService
 
     // MARK: - State
 
@@ -133,6 +134,13 @@ struct ProfileSetupView: View {
                 firstName: trimmedFirst,
                 lastName: trimmedLast
             )
+            
+            // Permission anfragen, wenn noch nicht entschieden.
+            // Wichtig: NACH erfolgreichem Profil-Setup, damit der User den Mehrwert versteht.
+            if notificationService.authorizationStatus == .notDetermined {
+                await notificationService.requestAuthorization()
+            }
+            
             // Routing reagiert automatisch auf currentUserService.currentUser != nil.
         } catch {
             errorMessage = "Speichern fehlgeschlagen: \(error.localizedDescription)"
@@ -144,4 +152,5 @@ struct ProfileSetupView: View {
     ProfileSetupView()
         .environment(AuthService.shared)
         .environment(CurrentUserService.shared)
+        .environment(NotificationService.shared)
 }

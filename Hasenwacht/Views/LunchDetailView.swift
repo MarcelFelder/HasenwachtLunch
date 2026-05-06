@@ -49,7 +49,7 @@ struct LunchDetailView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack {
-                    Text(date.weekdayName())
+                    Text(date.weekdayName)
                         .font(.headline)
                     Text(date.formattedLong())
                         .font(.caption)
@@ -67,8 +67,8 @@ struct LunchDetailView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            if day.lunchDay.isLocked {
-                Text(LunchDay.lockedMessage)
+            if let message = day.phaseMessage {
+                Text(message)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
