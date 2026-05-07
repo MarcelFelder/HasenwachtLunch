@@ -53,4 +53,14 @@ struct DayViewModel: Identifiable, Hashable {
 
     var phase: DayPhase { lunchDay.phase }
     var phaseMessage: String? { lunchDay.phaseMessage }
+
+    // MARK: - Zeitliche Einordnung
+
+    var isToday: Bool {
+        Calendar.current.isDateInToday(lunchDay.date)
+    }
+
+    var isPast: Bool {
+        Calendar.current.startOfDay(for: lunchDay.date) < Calendar.current.startOfDay(for: Date())
+    }
 }

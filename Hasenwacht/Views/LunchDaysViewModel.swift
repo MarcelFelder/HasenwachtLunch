@@ -33,8 +33,9 @@ final class LunchDaysViewModel: ObservableObject {
 
     private let holidayService = HolidayService()
     
-    /// Anzahl Werktage, die in der Tagesübersicht angezeigt werden.
-    private let workdayWindowSize = 12
+    /// Anzahl Werktage, die im Fetch-Fenster gehalten werden (ab Montag der aktuellen Woche).
+    /// 15 = 3 volle Wochen Mo–Fr.
+    private let workdayWindowSize = 15
 
     private var usersListener: ListenerRegistration?
     private var attendancesListener: ListenerRegistration?
@@ -306,24 +307,69 @@ final class LunchDaysViewModel: ObservableObject {
 
     // MARK: - Datum-Helper
 
-    /// Erzeugt die nächsten n Werktage ab heute, mit Datum auf 12:00 Uhr normalisiert.
-    /// Die Normalisierung ist wichtig für stabile Firestore-Queries und Vergleiche.
+    /// Erzeugt n Werktage ab Montag der aktuellen Woche, auf 12:00 Uhr normalisiert.
+    /// Startet ab Montag (statt ab heute), damit vergangene Wochentage ebenfalls
+    /// mit Attendance-Daten geladen werden und in der Übersicht angezeigt werden können.
     static func nextWorkdays(count: Int) -> [Date] {
-        let calendar = Calendar.current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
         var dates: [Date] = []
-        var current = calendar.startOfDay(for: Date())
-
-        // Auf 12:00 Uhr setzen, um Zeitzonen-Probleme zu minimieren
-        current = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: current) ?? current
+        var current = mondayOfCurrentWeek(using: calendar)
 
         while dates.count < count {
             let weekday = calendar.component(.weekday, from: current)
-            // 1=Sonntag, 7=Samstag → Werktage sind 2..6
             if weekday >= 2 && weekday <= 6 {
                 dates.append(current)
             }
             current = calendar.date(byAdding: .day, value: 1, to: current) ?? current
         }
         return dates
+    }
+
+    /// Gibt die 5 Wochentage (Mo–Fr) für den angegebenen Wochenoffset zurück.
+    /// offset 0 = aktuelle Woche, 1 = nächste Woche, usw.
+    static func weekDates(offset: Int) -> [Date] {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let monday = mondayOfCurrentWeek(using: calendar)
+        guard let targetMonday = calendar.date(byAdding: .weekOfYear, value: offset, to: monday) else {
+            return []
+        }
+        return (0..<5).compactMap { i in
+            calendar.date(byAdding: .day, value: i, to: targetMonday)
+        }
+    }
+
+    /// Liefert die DayViewModels für eine bestimmte Woche (offset 0 = diese Woche).
+    /// Tage, für die noch keine Daten geladen wurden, erhalten einen Platzhalter.
+    func days(forWeekOffset offset: Int) -> [DayViewModel] {
+        let targetDates = Self.weekDates(offset: offset)
+        let calendar = Calendar.current
+        return targetDates.map { date in
+            if let match = days.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
+                return match
+            }
+            let lunchDay = LunchDay(
+                id: nil, date: date,
+                isHoliday: false, holidayName: nil,
+                forceLunch: false, activatedBy: nil
+            )
+            return DayViewModel(
+                lunchDay: lunchDay,
+                attendees: allUsers,
+                absentees: [],
+                allUsers: allUsers,
+                currentUserId: currentUserId
+            )
+        }
+    }
+
+    /// Berechnet den Montag der aktuellen Woche, auf 12:00 Uhr normalisiert.
+    private static func mondayOfCurrentWeek(using calendar: Calendar) -> Date {
+        let now = Date()
+        let weekday = calendar.component(.weekday, from: now) // 1=So, 2=Mo … 7=Sa
+        let daysSinceMonday = weekday == 1 ? 6 : weekday - 2
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: now) ?? now
+        return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: monday) ?? monday
     }
 }
