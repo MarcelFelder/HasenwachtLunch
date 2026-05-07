@@ -44,7 +44,7 @@ struct LunchDay: Identifiable, Codable {
     static let cutoffHour = 14
 
     /// Uhrzeit, ab der "Mittagessen vorbei" gilt.
-    static let lunchOverTime = (hour: 12, minute: 15)
+    static let lunchOverTime = (hour: 13, minute: 0)
 
     // MARK: - Phase-Bestimmung
 

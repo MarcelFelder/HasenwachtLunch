@@ -20,14 +20,25 @@ struct LunchOverviewView: View {
         viewModel.days(forWeekOffset: weekOffset)
     }
 
-    private var upcomingSignups: Int {
-        weekDays.filter { $0.currentUserAttending && !$0.isPast && $0.lunchDay.hasLunch }.count
+    /// True wenn heute nach 14:00 Uhr und die aktuelle Woche angezeigt wird —
+    /// dann ist Morgen bereits gesperrt und der Banner wird eingeblendet.
+    private var showCutoffBanner: Bool {
+        guard weekOffset == 0 else { return false }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let now = Date()
+        let hour = calendar.component(.hour, from: now)
+        let weekday = calendar.component(.weekday, from: now) // 1=So … 7=Sa
+        // Freitag nach 14 Uhr: nächster Werktag ist Montag, aber Banner macht
+        // hier weniger Sinn — nur Mo–Do anzeigen.
+        let isWeekday = weekday >= 2 && weekday <= 5 // Mo–Do
+        return isWeekday && hour >= LunchDay.cutoffHour
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(UIColor.systemGray6).ignoresSafeArea()
+                DS.Colors.surface.ignoresSafeArea()
 
                 if viewModel.isLoading && viewModel.days.isEmpty {
                     ProgressView()
@@ -45,11 +56,12 @@ struct LunchOverviewView: View {
     // MARK: - Layout
 
     private var mainContent: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                headerSection
+        VStack(spacing: 0) {
+            headerSection
+            ScrollView {
                 dayListSection
             }
+            .background(DS.Colors.surface)
         }
     }
 
@@ -61,14 +73,14 @@ struct LunchOverviewView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("LUNCH")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color.orange)
+                        .foregroundStyle(DS.Colors.primary)
                         .tracking(2.5)
                     Text("Anmeldung")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(Color.primary)
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(DS.Colors.textPrimary)
                 }
                 Spacer()
-                signupCountPill
+                // Badge entfernt — unnötige Information
             }
 
             weekSwitcher
@@ -76,26 +88,7 @@ struct LunchOverviewView: View {
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .padding(.bottom, 16)
-        .background(Color.white)
-    }
-
-    private var signupCountPill: some View {
-        HStack(spacing: 5) {
-            Circle()
-                .fill(Color.lunchEmerald)
-                .frame(width: 6, height: 6)
-            Text("\(upcomingSignups) dabei")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.lunchEmeraldDark)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.lunchEmeraldDark.opacity(0.1))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.lunchEmeraldDark.opacity(0.3), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .background(DS.Colors.surface)
     }
 
     private var weekSwitcher: some View {
@@ -105,11 +98,11 @@ struct LunchOverviewView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(weekOffset == 0 ? Color(UIColor.tertiaryLabel) : Color.primary)
+                    .foregroundStyle(weekOffset == 0 ? DS.Colors.textTertiary : DS.Colors.textSecondary)
                     .frame(width: 36, height: 36)
-                    .background(weekOffset == 0 ? Color.clear : Color.white)
+                    .background(weekOffset == 0 ? Color.clear : DS.Colors.background)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .shadow(color: weekOffset > 0 ? Color.black.opacity(0.08) : Color.clear,
+                    .shadow(color: weekOffset > 0 ? Color.black.opacity(0.06) : Color.clear,
                             radius: 2, y: 1)
             }
             .disabled(weekOffset == 0)
@@ -119,9 +112,10 @@ struct LunchOverviewView: View {
             VStack(spacing: 2) {
                 Text(weekLabel)
                     .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(DS.Colors.textPrimary)
                 Text(weekDateRange)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color(UIColor.secondaryLabel))
+                    .foregroundStyle(DS.Colors.textSecondary)
             }
 
             Spacer()
@@ -131,18 +125,18 @@ struct LunchOverviewView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(weekOffset < 2 ? Color.primary : Color(UIColor.tertiaryLabel))
+                    .foregroundStyle(weekOffset < 2 ? DS.Colors.textSecondary : DS.Colors.textTertiary)
                     .frame(width: 36, height: 36)
-                    .background(weekOffset < 2 ? Color.white : Color.clear)
+                    .background(weekOffset < 2 ? DS.Colors.background : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .shadow(color: weekOffset < 2 ? Color.black.opacity(0.08) : Color.clear,
+                    .shadow(color: weekOffset < 2 ? Color.black.opacity(0.06) : Color.clear,
                             radius: 2, y: 1)
             }
             .disabled(weekOffset >= 2)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 4)
-        .background(Color(UIColor.systemGray6))
+        .background(DS.Colors.surfaceAlt)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -150,16 +144,24 @@ struct LunchOverviewView: View {
 
     private var dayListSection: some View {
         VStack(spacing: 8) {
-            ForEach(weekDays) { day in
-                DayCard(day: day) {
-                    guard !day.isPast, day.lunchDay.hasLunch else { return }
-                    Task { await viewModel.toggleAttendance(for: day.date) }
+            ForEach(Array(weekDays.enumerated()), id: \.element.id) { index, day in
+                // showCutoffBanner nur beim ersten gesperrten Folgetag
+                let isCutoffDay = showCutoffBanner
+                    && !day.isToday && !day.isPast && day.lunchDay.isLocked
+                    && weekDays.prefix(index).allSatisfy { $0.isToday || $0.isPast || !$0.lunchDay.isLocked }
+
+                NavigationLink(destination: LunchDetailView(date: day.date)) {
+                    DayCard(day: day, showCutoffBanner: isCutoffDay) {
+                        guard !day.lunchDay.isLocked, day.lunchDay.hasLunch else { return }
+                        Task { await viewModel.toggleAttendance(for: day.date) }
+                    }
                 }
+                .buttonStyle(PlainButtonStyle())
             }
 
-            Text("Anmeldung bis 9:00 Uhr am gleichen Tag möglich")
+            Text("Standardmässig bist du angemeldet. Abmeldung bis 14:00 Uhr am Vortag.")
                 .font(.system(size: 11))
-                .foregroundStyle(Color(UIColor.tertiaryLabel))
+                .foregroundStyle(DS.Colors.textTertiary)
                 .multilineTextAlignment(.center)
                 .padding(.top, 8)
                 .padding(.horizontal, 16)
@@ -207,16 +209,25 @@ struct LunchOverviewView: View {
 
 private struct DayCard: View {
     let day: DayViewModel
+    var showCutoffBanner: Bool = false
     let onToggle: () -> Void
+
+    /// Nach 13:00 Uhr wird der heutige Tag wie ein vergangener Tag dargestellt.
+    private var isTodayOver: Bool {
+        guard day.isToday else { return false }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        return calendar.component(.hour, from: Date()) >= 13
+    }
 
     var body: some View {
         Group {
-            if day.isToday {
-                TodayCard(day: day, onToggle: onToggle)
-            } else if day.isPast {
+            if day.isPast || isTodayOver {
                 PastCard(day: day)
+            } else if day.isToday {
+                TodayCard(day: day, onToggle: onToggle)
             } else {
-                UpcomingCard(day: day, onToggle: onToggle)
+                UpcomingCard(day: day, showCutoffBanner: showCutoffBanner, onToggle: onToggle)
             }
         }
     }
@@ -228,58 +239,85 @@ private struct TodayCard: View {
     let day: DayViewModel
     let onToggle: () -> Void
 
+    private var isLocked: Bool { day.lunchDay.isLocked }
+
     var body: some View {
-        Button(action: onToggle) {
-            ZStack(alignment: .topTrailing) {
-                Circle()
-                    .fill(Color.orange.opacity(0.12))
-                    .frame(width: 120, height: 120)
-                    .blur(radius: 24)
-                    .offset(x: 20, y: -20)
+        HStack(spacing: 12) {
+            DateBlock(day: day, variant: .dark)
 
-                HStack(spacing: 12) {
-                    DateBlock(day: day, variant: .dark)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(day.date.weekdayNameLong)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color.white)
+                    Text("Heute")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.white)
+                        .tracking(0.8)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.orange)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                HStack(spacing: 6) {
+                    AvatarStack(users: Array(day.attendees.prefix(3)), variant: .dark)
+                    Text("\(day.attendingCount) angemeldet")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.7))
+                }
+            }
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Text(day.date.weekdayNameLong)
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(Color.white)
-                            Text("Heute")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(Color.white)
-                                .tracking(0.8)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(Color.orange)
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                        }
-                        HStack(spacing: 6) {
-                            AvatarStack(users: Array(day.attendees.prefix(3)), variant: .dark)
-                            Text("\(day.attendingCount) angemeldet")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.7))
-                        }
-                    }
+            Spacer(minLength: 0)
 
-                    Spacer(minLength: 0)
-
+            if isLocked {
+                LockedStatusChip(isAttending: day.currentUserAttending)
+            } else {
+                Button(action: onToggle) {
                     ActionPill(isSignedUp: day.currentUserAttending, variant: .dark)
                 }
-                .padding(16)
+                .buttonStyle(ScaleButtonStyle())
             }
-            .background(
-                LinearGradient(
-                    colors: [Color(white: 0.11), Color(white: 0.19)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .shadow(color: Color.black.opacity(0.20), radius: 12, y: 4)
         }
-        .buttonStyle(ScaleButtonStyle())
-        .disabled(day.lunchDay.isLocked)
+        .padding(16)
+        .background(
+            LinearGradient(
+                colors: isLocked
+                    ? [Color(white: 0.20), Color(white: 0.26)]
+                    : [Color(white: 0.11), Color(white: 0.19)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(
+            color: isLocked ? Color.black.opacity(0.10) : Color.black.opacity(0.20),
+            radius: isLocked ? 6 : 12,
+            y: isLocked ? 3 : 4
+        )
+    }
+}
+
+// MARK: - Gesperrter Status-Chip (nicht tappbar, klar deaktiviert)
+
+private struct LockedStatusChip: View {
+    let isAttending: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: isAttending ? "checkmark" : "xmark")
+                .font(.system(size: 11, weight: .semibold))
+            Text(isAttending ? "Dabei" : "Abgemeldet")
+                .font(.system(size: 12, weight: .semibold))
+        }
+        .foregroundStyle(Color.white.opacity(0.35))
+        .padding(.horizontal, 12)
+        .frame(height: 36)
+        .background(Color.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
     }
 }
 
@@ -296,20 +334,26 @@ private struct PastCard: View {
                 Text(day.date.weekdayNameLong)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color(UIColor.tertiaryLabel))
-                Text(day.currentUserAttending ? "✓ Du warst dabei" : "Nicht teilgenommen")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(UIColor.quaternaryLabel))
+
+                HStack(spacing: 4) {
+                    Image(systemName: day.currentUserAttending ? "checkmark" : "xmark")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color(UIColor.quaternaryLabel))
+                    Text(day.currentUserAttending ? "Teilgenommen" : "Abgemeldet")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(UIColor.quaternaryLabel))
+                }
             }
 
             Spacer()
 
-            Text("Vorbei")
+            Text("VORBEI")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Color(UIColor.tertiaryLabel))
                 .tracking(0.5)
         }
         .padding(16)
-        .background(Color.white.opacity(0.5))
+        .background(DS.Colors.background.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .opacity(0.6)
     }
@@ -319,51 +363,82 @@ private struct PastCard: View {
 
 private struct UpcomingCard: View {
     let day: DayViewModel
+    var showCutoffBanner: Bool = false
     let onToggle: () -> Void
 
-    var body: some View {
-        Button(action: onToggle) {
-            HStack(spacing: 12) {
-                DateBlock(day: day, variant: .light)
+    private var isOptedOut: Bool { !day.currentUserAttending }
+    private var isLocked: Bool { day.lunchDay.isLocked }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(day.date.weekdayNameLong)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Color.primary)
+    var body: some View {
+        HStack(spacing: 12) {
+            DateBlock(day: day, variant: isOptedOut ? .optOut : .light)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(day.date.weekdayNameLong)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(isOptedOut ? DS.Colors.textTertiary : DS.Colors.textPrimary)
+                    .strikethrough(isOptedOut, color: DS.Colors.textTertiary)
+
+                if showCutoffBanner {
+                    // Cutoff-Hinweis direkt als Subzeile in der Karte
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(DS.Colors.warning)
+                        Text("Keine Änderungen mehr möglich")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(DS.Colors.warning)
+                    }
+                } else if isOptedOut {
+                    HStack(spacing: 4) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(DS.Colors.textTertiary)
+                        Text("Du bist abgemeldet")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(DS.Colors.textTertiary)
+                    }
+                } else {
                     HStack(spacing: 6) {
                         AvatarStack(users: Array(day.attendees.prefix(3)), variant: .light)
                         Text("\(day.attendingCount) angemeldet")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color(UIColor.secondaryLabel))
+                            .foregroundStyle(DS.Colors.textSecondary)
                     }
                 }
+            }
 
-                Spacer(minLength: 0)
+            Spacer(minLength: 0)
 
+            Button(action: onToggle) {
                 ActionPill(isSignedUp: day.currentUserAttending, variant: .light)
             }
-            .padding(16)
-            .background(Color.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(
-                        day.currentUserAttending
-                            ? Color.lunchEmerald.opacity(0.35)
-                            : Color(UIColor.separator),
-                        lineWidth: day.currentUserAttending ? 2 : 1
-                    )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
+            .buttonStyle(ScaleButtonStyle())
+            .disabled(isLocked)
+            .opacity(isLocked ? 0.4 : 1.0)
         }
-        .buttonStyle(ScaleButtonStyle())
-        .disabled(day.lunchDay.isLocked)
+        .padding(16)
+        .background(showCutoffBanner ? DS.Colors.warningSurface : DS.Colors.background)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(
+                    showCutoffBanner
+                        ? DS.Colors.warning.opacity(0.3)
+                        : (isOptedOut ? DS.Colors.border.opacity(0.6) : Color.lunchEmerald.opacity(0.35)),
+                    style: StrokeStyle(
+                        lineWidth: isOptedOut && !showCutoffBanner ? 1 : (showCutoffBanner ? 1 : 2),
+                        dash: isOptedOut && !showCutoffBanner ? [6, 4] : []
+                    )
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: Color.black.opacity(isOptedOut || showCutoffBanner ? 0 : 0.04), radius: 4, y: 2)
     }
 }
 
 // MARK: - Unterkomponenten
 
-private enum CardVariant { case dark, light, past }
+private enum CardVariant { case dark, todayLocked, light, past, optOut }
 
 private struct DateBlock: View {
     let day: DayViewModel
@@ -394,25 +469,31 @@ private struct DateBlock: View {
 
     private var blockBackground: Color {
         switch variant {
-        case .dark:  return Color.white.opacity(0.1)
-        case .light: return Color(UIColor.systemGray6)
-        case .past:  return Color(UIColor.systemGray5)
+        case .dark:        return Color.white.opacity(0.1)
+        case .todayLocked: return DS.Colors.surface
+        case .light:       return Color.lunchEmerald.opacity(0.08)
+        case .past:        return DS.Colors.surfaceAlt
+        case .optOut:      return DS.Colors.surface
         }
     }
 
     private var labelColor: Color {
         switch variant {
-        case .dark:  return Color.white.opacity(0.55)
-        case .light: return Color(UIColor.secondaryLabel)
-        case .past:  return Color(UIColor.tertiaryLabel)
+        case .dark:        return Color.white.opacity(0.55)
+        case .todayLocked: return DS.Colors.textTertiary
+        case .light:       return Color.lunchEmeraldDark
+        case .past:        return DS.Colors.textTertiary
+        case .optOut:      return DS.Colors.textTertiary
         }
     }
 
     private var numberColor: Color {
         switch variant {
-        case .dark:  return Color.white
-        case .light: return Color.primary
-        case .past:  return Color(UIColor.tertiaryLabel)
+        case .dark:        return Color.white
+        case .todayLocked: return DS.Colors.textSecondary
+        case .light:       return DS.Colors.textPrimary
+        case .past:        return DS.Colors.textTertiary
+        case .optOut:      return DS.Colors.textTertiary
         }
     }
 
@@ -426,7 +507,7 @@ private struct AvatarStack: View {
     let variant: CardVariant
 
     private var borderColor: Color {
-        variant == .dark ? Color(white: 0.14) : Color.white
+        variant == .dark ? Color(white: 0.14) : DS.Colors.background
     }
 
     var body: some View {
@@ -447,10 +528,17 @@ private struct ActionPill: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: isSignedUp ? "checkmark" : "plus")
-                .font(.system(size: 12, weight: .bold))
-            Text(isSignedUp ? "Dabei" : "Anmelden")
-                .font(.system(size: 12, weight: .semibold))
+            if isSignedUp {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 12, weight: .bold))
+                Text("Dabei")
+                    .font(.system(size: 12, weight: .semibold))
+            } else {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .bold))
+                Text("Anmelden")
+                    .font(.system(size: 12, weight: .semibold))
+            }
         }
         .foregroundStyle(pillForeground)
         .padding(.horizontal, 12)
@@ -459,9 +547,9 @@ private struct ActionPill: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(
             Group {
-                if variant == .light && !isSignedUp {
+                if !isSignedUp {
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color(UIColor.separator), lineWidth: 1)
+                        .stroke(DS.Colors.border, lineWidth: 1)
                 }
             }
         )
@@ -470,18 +558,18 @@ private struct ActionPill: View {
     private var pillForeground: Color {
         switch (variant, isSignedUp) {
         case (.dark, true):  return Color(white: 0.1)
-        case (.dark, false): return Color(white: 0.1)
+        case (.dark, false): return DS.Colors.textSecondary
         case (.light, true): return Color.white
-        default:             return Color(UIColor.secondaryLabel)
+        default:             return DS.Colors.textSecondary
         }
     }
 
     private var pillBackground: Color {
         switch (variant, isSignedUp) {
-        case (.dark, true):  return Color.lunchEmeraldLight   // emerald-400-ish
-        case (.dark, false): return Color.white
-        case (.light, true): return Color.lunchEmerald        // emerald-500
-        default:             return Color(UIColor.systemGray6)
+        case (.dark, true):  return Color.lunchEmeraldLight
+        case (.dark, false): return Color.white.opacity(0.15)
+        case (.light, true): return Color.lunchEmerald
+        default:             return DS.Colors.surface
         }
     }
 }
@@ -499,7 +587,7 @@ private struct ScaleButtonStyle: ButtonStyle {
 // MARK: - Farb-Konstanten
 
 private extension Color {
-    static let lunchEmerald     = Color(red: 0.13, green: 0.70, blue: 0.44)
-    static let lunchEmeraldDark = Color(red: 0.09, green: 0.55, blue: 0.34)
+    static let lunchEmerald      = Color(red: 0.13, green: 0.70, blue: 0.44)
+    static let lunchEmeraldDark  = Color(red: 0.09, green: 0.55, blue: 0.34)
     static let lunchEmeraldLight = Color(red: 0.38, green: 0.88, blue: 0.58)
 }
