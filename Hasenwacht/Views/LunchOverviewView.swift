@@ -97,11 +97,11 @@ struct LunchOverviewView: View {
                 if weekOffset > 0 { weekOffset -= 1 }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(weekOffset == 0 ? DS.Colors.textTertiary : DS.Colors.textSecondary)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .background(weekOffset == 0 ? Color.clear : DS.Colors.background)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .shadow(color: weekOffset > 0 ? Color.black.opacity(0.06) : Color.clear,
                             radius: 2, y: 1)
             }
@@ -111,10 +111,10 @@ struct LunchOverviewView: View {
 
             VStack(spacing: 2) {
                 Text(weekLabel)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(DS.Colors.textPrimary)
                 Text(weekDateRange)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(DS.Colors.textSecondary)
             }
 
@@ -124,20 +124,20 @@ struct LunchOverviewView: View {
                 if weekOffset < 2 { weekOffset += 1 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(weekOffset < 2 ? DS.Colors.textSecondary : DS.Colors.textTertiary)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .background(weekOffset < 2 ? DS.Colors.background : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .shadow(color: weekOffset < 2 ? Color.black.opacity(0.06) : Color.clear,
                             radius: 2, y: 1)
             }
             .disabled(weekOffset >= 2)
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 6)
         .background(DS.Colors.surfaceAlt)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     // MARK: - Tagesliste
@@ -377,7 +377,6 @@ private struct UpcomingCard: View {
                 Text(day.date.weekdayNameLong)
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(isOptedOut ? DS.Colors.textTertiary : DS.Colors.textPrimary)
-                    .strikethrough(isOptedOut, color: DS.Colors.textTertiary)
 
                 if showCutoffBanner {
                     // Cutoff-Hinweis direkt als Subzeile in der Karte
@@ -513,10 +512,7 @@ private struct AvatarStack: View {
     var body: some View {
         HStack(spacing: -6) {
             ForEach(users) { user in
-                Circle()
-                    .fill(user.avatarColor)
-                    .frame(width: 16, height: 16)
-                    .overlay(Circle().stroke(borderColor, lineWidth: 2))
+                UserAvatarView(user: user, size: 16, borderColor: borderColor, borderWidth: 1.5)
             }
         }
     }

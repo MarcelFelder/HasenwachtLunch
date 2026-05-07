@@ -28,12 +28,25 @@ final class UserService {
     // MARK: - User speichern
 
     /// Erstellt oder aktualisiert ein User-Dokument in Firestore.
-    /// Verwendet die userId als Dokument-ID, damit es pro User nur einen Eintrag gibt.
     func saveUser(_ user: User) async throws {
         guard let userId = user.id else {
             throw UserServiceError.missingUserId
         }
         try usersCollection.document(userId).setData(from: user, merge: true)
+    }
+
+    /// Aktualisiert Name und optional Foto eines bestehenden Users.
+    func updateProfile(userId: String, firstName: String, lastName: String,
+                       photoBase64: String?, canCook: Bool) async throws {
+        var data: [String: Any] = [
+            "firstName": firstName,
+            "lastName": lastName,
+            "canCook": canCook
+        ]
+        if let photo = photoBase64 {
+            data["photoBase64"] = photo
+        }
+        try await usersCollection.document(userId).updateData(data)
     }
 
     // MARK: - Einzelnen User laden

@@ -74,13 +74,37 @@ final class CurrentUserService {
             id: userId,
             firstName: firstName,
             lastName: lastName,
-            photoURL: nil,
-            createdAt: Date()
+            canCook: false
         )
 
         try await UserService.shared.saveUser(newUser)
         currentUser = newUser
         didCheckProfile = true
+    }
+
+    // MARK: - Profil aktualisieren
+
+    /// Aktualisiert Name und/oder Foto des aktuellen Users.
+    func updateProfile(firstName: String, lastName: String, photoBase64: String?, canCook: Bool) async throws {
+        guard let userId = currentUser?.id else { return }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        try await UserService.shared.updateProfile(
+            userId: userId,
+            firstName: firstName,
+            lastName: lastName,
+            photoBase64: photoBase64,
+            canCook: canCook
+        )
+
+        currentUser?.firstName = firstName
+        currentUser?.lastName = lastName
+        currentUser?.canCook = canCook
+        if let photo = photoBase64 {
+            currentUser?.photoBase64 = photo
+        }
     }
 
     // MARK: - Reset bei Logout

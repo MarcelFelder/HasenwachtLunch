@@ -63,10 +63,16 @@ final class AbsenceService {
                           onChange: @escaping ([VacationAbsence]) -> Void) -> ListenerRegistration {
         vacationCollection
             .whereField("userId", isEqualTo: userId)
-            .order(by: "startDate")
-            .addSnapshotListener { snapshot, _ in
+            .addSnapshotListener { snapshot, error in
+                if let error {
+                    print("❌ observeVacations error: \(error)")
+                    onChange([])
+                    return
+                }
                 guard let docs = snapshot?.documents else { onChange([]); return }
-                let vacations = docs.compactMap { try? $0.data(as: VacationAbsence.self) }
+                let vacations = docs
+                    .compactMap { try? $0.data(as: VacationAbsence.self) }
+                    .sorted { $0.startDate < $1.startDate } // client-seitig sortieren
                 onChange(vacations)
             }
     }
@@ -76,7 +82,12 @@ final class AbsenceService {
         let ref = vacationCollection.document()
         var v = vacation
         v.id = ref.documentID
-        try ref.setData(from: v)
+        do {
+            try ref.setData(from: v)
+        } catch {
+            print("❌ AbsenceService.addVacation error: \(error)")
+            throw error
+        }
     }
 
     /// Löscht einen Ferieneintrag.

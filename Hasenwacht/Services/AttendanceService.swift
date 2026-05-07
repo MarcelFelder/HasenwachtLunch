@@ -27,7 +27,6 @@ final class AttendanceService {
     // MARK: - Eine Attendance speichern
 
     /// Setzt den Anwesenheitsstatus für einen User an einem bestimmten Tag.
-    /// Erstellt das Dokument, falls es noch nicht existiert.
     func setAttendance(userId: String, date: Date, isAttending: Bool) async throws {
         let documentId = Attendance.documentId(userId: userId, date: date)
         let attendance = Attendance(
@@ -38,6 +37,45 @@ final class AttendanceService {
             updatedAt: Date()
         )
         try attendancesCollection.document(documentId).setData(from: attendance, merge: true)
+    }
+
+    /// Löscht ein Attendance-Dokument (z.B. beim Entfernen einer Absenz-Regel).
+    func deleteAttendance(userId: String, date: Date) async throws {
+        let documentId = Attendance.documentId(userId: userId, date: date)
+        try await attendancesCollection.document(documentId).delete()
+    }
+
+    /// Schreibt mehrere Attendances auf einmal (Batch) — für Absenz-Regeln über mehrere Tage.
+    /// Überschreibt nur Dokumente die noch nicht manuell vom User geändert wurden,
+    /// es sei denn forceOverride ist true.
+    func batchSetAttendances(userId: String, dates: [Date], isAttending: Bool) async throws {
+        let batch = db.batch()
+        for date in dates {
+            let docId = Attendance.documentId(userId: userId, date: date)
+            let ref = attendancesCollection.document(docId)
+            let attendance = Attendance(
+                id: nil,
+                userId: userId,
+                date: date,
+                isAttending: isAttending,
+                updatedAt: Date()
+            )
+            if let data = try? Firestore.Encoder().encode(attendance) {
+                batch.setData(data, forDocument: ref)
+            }
+        }
+        try await batch.commit()
+    }
+
+    /// Löscht mehrere Attendance-Dokumente auf einmal (Batch).
+    func batchDeleteAttendances(userId: String, dates: [Date]) async throws {
+        let batch = db.batch()
+        for date in dates {
+            let docId = Attendance.documentId(userId: userId, date: date)
+            let ref = attendancesCollection.document(docId)
+            batch.deleteDocument(ref)
+        }
+        try await batch.commit()
     }
 
     // MARK: - Listener für einen Datumsbereich

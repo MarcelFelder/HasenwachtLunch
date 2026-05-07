@@ -55,6 +55,12 @@ final class LunchDaysViewModel: ObservableObject {
         self.currentUserId = userId
     }
 
+    /// Wird vom AbsenceViewModel aufgerufen wenn sich Abwesenheiten ändern.
+    /// Löst einen Rebuild aus damit die Tagesansicht sofort aktualisiert wird.
+    func onAbsenceChanged() {
+        rebuildDays()
+    }
+
     // MARK: - Lifecycle
 
     /// Startet die Listener für User und Attendances.
@@ -196,31 +202,21 @@ final class LunchDaysViewModel: ObservableObject {
     private func buildDayViewModel(for date: Date) -> DayViewModel {
         let calendar = Calendar.current
 
-        // 1. Feiertag-Info zuerst bestimmen — sie beeinflusst alles weitere.
         let holiday = holidayService.holiday(for: date)
-
-        // 2. Override aus Firestore prüfen: Wurde dieser Tag manuell aktiviert?
-        let lunchDayOverride = lunchDays.first { entry in
-            calendar.isDate(entry.date, inSameDayAs: date)
-        }
+        let lunchDayOverride = lunchDays.first { calendar.isDate($0.date, inSameDayAs: date) }
         let forceLunch = lunchDayOverride?.forceLunch ?? false
-
-        // 3. Findet überhaupt Mittagessen statt?
-        //    Normaler Werktag: ja. Feiertag: nur wenn forceLunch.
         let isLunchHappening = (holiday == nil) || forceLunch
 
-        // 4. Attendances für diesen Tag filtern.
-        let attendancesForDay = attendances.filter { attendance in
-            calendar.isDate(attendance.date, inSameDayAs: date)
-        }
+        let attendancesForDay = attendances.filter { calendar.isDate($0.date, inSameDayAs: date) }
 
+        // Opt-Out-UserIds: explizit abgemeldete User (isAttending=false in Firestore).
+        // Absenz-Regeln schreiben direkt Attendance-Dokumente → kein lokaler Override nötig.
         let optedOutUserIds = Set(
             attendancesForDay
                 .filter { !$0.isAttending }
                 .map { $0.userId }
         )
 
-        // 5. Teilnehmerlisten aufbauen.
         let attendees: [User]
         let absentees: [User]
 
@@ -234,12 +230,10 @@ final class LunchDaysViewModel: ObservableObject {
                 return optedOutUserIds.contains(userId)
             }
         } else {
-            // Feiertag ohne forceLunch: niemand isst.
             attendees = []
             absentees = allUsers
         }
 
-        // 6. LunchDay-Objekt zusammenbauen.
         let lunchDay = LunchDay(
             id: lunchDayOverride?.id,
             date: date,
@@ -261,12 +255,9 @@ final class LunchDaysViewModel: ObservableObject {
     // MARK: - Toggle-Aktion
 
     /// Wechselt den Anwesenheitsstatus des aktuellen Users für den gegebenen Tag.
+    /// Manuelle Anmeldung überschreibt eine aktive Absenz für diesen Tag.
     func toggleAttendance(for date: Date) async {
-        // Defense in Depth: UI sollte den Tap schon blockieren, aber wir
-        // verifizieren hier nochmal, falls jemand z.B. via Notification rein kommt.
-        if LunchDay.phase(for: date, now: Date()) != .bookable {
-            return
-        }
+        if LunchDay.phase(for: date, now: Date()) != .bookable { return }
 
         let isCurrentlyAttending = days
             .first { Calendar.current.isDate($0.date, inSameDayAs: date) }?
