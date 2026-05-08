@@ -400,8 +400,3 @@ private struct ScaleButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }
 }
-
-private extension Color {
-    static let absenceBlue  = Color(red: 0.33, green: 0.45, blue: 0.80)
-    static let absenceAmber = Color(red: 0.80, green: 0.50, blue: 0.15)
-}

@@ -421,7 +421,3 @@ private struct ScaleButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
     }
 }
-
-extension Color {
-    static let cookingPurple = Color(red: 0.45, green: 0.30, blue: 0.80)
-}
