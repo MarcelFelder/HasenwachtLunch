@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>ch.hasenwacht.lunch.Hasenwacht</string>
+	<string>com.marcelfelder.hasenwacht</string>
 	<key>PROJECT_ID</key>
 	<string>hasenwacht</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:667407417992:ios:a2eba4e5ec93412d61553d</string>
+	<string>1:667407417992:ios:75569b0c302dd29a61553d</string>
 </dict>
 </plist>
