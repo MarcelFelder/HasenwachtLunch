@@ -37,11 +37,18 @@ final class UserService {
 
     /// Aktualisiert Name und optional Foto eines bestehenden Users.
     func updateProfile(userId: String, firstName: String, lastName: String,
-                       photoBase64: String?, canCook: Bool) async throws {
+                       photoBase64: String?, canCook: Bool,
+                       foodPreferences: FoodPreferences) async throws {
         var data: [String: Any] = [
             "firstName": firstName,
             "lastName": lastName,
-            "canCook": canCook
+            "canCook": canCook,
+            "foodPreferences": [
+                "allergies":    foodPreferences.allergies,
+                "intolerances": foodPreferences.intolerances,
+                "dislikes":     foodPreferences.dislikes,
+                "favorites":    foodPreferences.favorites
+            ]
         ]
         if let photo = photoBase64 {
             data["photoBase64"] = photo

@@ -15,11 +15,24 @@ struct DayViewModel: Identifiable, Hashable {
     var absentees: [User]
     let allUsers: [User]
     let currentUserId: String
+    var hasNoData: Bool
+    var isNextRelevantDay: Bool
 
-    /// Markiert den "nächsten relevanten Tag" in der Liste — gesetzt vom ViewModel.
-    /// Wird in der Übersicht als Badge dargestellt, damit User nicht denken, der
-    /// erste Tag in der Liste sei automatisch der wichtigste (bei lunchOver-Phase).
-    var isNextRelevantDay: Bool = false
+    init(lunchDay: LunchDay,
+         attendees: [User],
+         absentees: [User],
+         allUsers: [User],
+         currentUserId: String,
+         hasNoData: Bool = false,
+         isNextRelevantDay: Bool = false) {
+        self.lunchDay          = lunchDay
+        self.attendees         = attendees
+        self.absentees         = absentees
+        self.allUsers          = allUsers
+        self.currentUserId     = currentUserId
+        self.hasNoData         = hasNoData
+        self.isNextRelevantDay = isNextRelevantDay
+    }
 
     // MARK: - Identity & Equality
 

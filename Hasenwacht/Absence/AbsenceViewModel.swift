@@ -103,7 +103,7 @@ final class AbsenceViewModel: ObservableObject {
 
     /// Liefert alle bookable Werktage im Lade-Fenster (3 Wochen) die dem ISO-Wochentag entsprechen.
     private func bookableDatesForWeekday(_ isoWeekday: Int) -> [Date] {
-        LunchDaysViewModel.nextWorkdays(count: 15).filter { date in
+        LunchDaysViewModel.nextWorkdays(count: 200).filter { date in
             // Nur bookable Tage (nicht gesperrt)
             guard LunchDay.phase(for: date, now: Date()) == .bookable else { return false }
             // ISO-Wochentag prüfen
@@ -160,7 +160,7 @@ final class AbsenceViewModel: ObservableObject {
 
     /// Alle bookable Werktage zwischen zwei Daten (inklusiv).
     private func bookableDatesInRange(from start: Date, to end: Date) -> [Date] {
-        LunchDaysViewModel.nextWorkdays(count: 15).filter { date in
+        LunchDaysViewModel.nextWorkdays(count: 200).filter { date in
             guard LunchDay.phase(for: date, now: Date()) == .bookable else { return false }
             var cal = Calendar(identifier: .gregorian)
             cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current

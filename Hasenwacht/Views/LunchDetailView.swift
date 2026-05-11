@@ -34,6 +34,9 @@ struct LunchDetailView: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         statusHero(day: day)
+                        if day.isHoliday {
+                            holidayBanner(day: day)
+                        }
                         cookingCard
                         attendeesCard(day: day)
                         absenteesCard(day: day)
@@ -185,6 +188,84 @@ struct LunchDetailView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+    }
+
+    // MARK: - Feiertags-Banner
+
+    private func holidayBanner(day: DayViewModel) -> some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(spacing: 8) {
+                Image(systemName: "calendar.badge.exclamationmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DS.Colors.warning)
+                Text(day.holidayName ?? "Feiertag")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                Spacer()
+                if day.lunchDay.forceLunch {
+                    Text("Aktiviert")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.lunchEmerald)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(DS.Colors.successSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(DS.Colors.background)
+            .overlay(Divider().background(DS.Colors.border), alignment: .bottom)
+
+            // Info + Toggle
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(day.lunchDay.forceLunch
+                         ? "Mittagessen findet statt"
+                         : "Kein Mittagessen geplant")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textPrimary)
+                    Text(day.lunchDay.forceLunch
+                         ? "Wurde manuell aktiviert"
+                         : "Tippe um es trotzdem zu aktivieren")
+                        .font(.system(size: 12))
+                        .foregroundStyle(DS.Colors.textSecondary)
+                }
+                Spacer()
+                Button {
+                    Task { await viewModel.activateLunchForHoliday(date: day.date) }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "fork.knife")
+                            .font(.system(size: 11, weight: .bold))
+                        Text(day.lunchDay.forceLunch ? "Aktiviert" : "Aktivieren")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(day.lunchDay.forceLunch ? Color.lunchEmerald : DS.Colors.textSecondary)
+                    .padding(.horizontal, 12).frame(height: 34)
+                    .background(day.lunchDay.forceLunch ? DS.Colors.successSurface : DS.Colors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 17))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 17)
+                            .stroke(day.lunchDay.forceLunch
+                                    ? Color.lunchEmerald.opacity(0.4)
+                                    : DS.Colors.border, lineWidth: 1)
+                    )
+                }
+                .disabled(day.lunchDay.forceLunch)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .background(DS.Colors.background)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(day.lunchDay.forceLunch
+                        ? Color.lunchEmerald.opacity(0.3)
+                        : DS.Colors.warning.opacity(0.3), lineWidth: 1)
+        )
+        .background(day.lunchDay.forceLunch ? DS.Colors.successSurface : DS.Colors.warningSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
     }
 
     // MARK: - Cooking Card

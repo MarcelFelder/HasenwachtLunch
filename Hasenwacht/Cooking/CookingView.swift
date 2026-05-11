@@ -57,15 +57,19 @@ struct CookingView: View {
                         .foregroundStyle(DS.Colors.textPrimary)
                 }
                 Spacer()
-                Text("β Beta")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color.cookingPurple)
+                Text("BETA")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(DS.Colors.textPrimary)
+                    .tracking(1.5)
                     .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.cookingPurple.opacity(0.10))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.cookingPurple.opacity(0.3), lineWidth: 1))
+                    .padding(.vertical, 5)
+                    .background(DS.Colors.background)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(DS.Colors.border, lineWidth: 1.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.06), radius: 3, y: 1)
             }
             weekSwitcher
         }
@@ -77,9 +81,9 @@ struct CookingView: View {
 
     private var betaBanner: some View {
         HStack(spacing: 10) {
-            Image(systemName: "flask.fill")
+            Image(systemName: "info.circle")
                 .font(.system(size: 13))
-                .foregroundStyle(Color.cookingPurple)
+                .foregroundStyle(DS.Colors.textSecondary)
             Text("Dieses Feature ist in der Entwicklung. Feedback willkommen!")
                 .font(.system(size: 12))
                 .foregroundStyle(DS.Colors.textSecondary)
@@ -87,9 +91,9 @@ struct CookingView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color.cookingPurple.opacity(0.06))
+        .background(DS.Colors.surfaceAlt)
         .overlay(Rectangle().frame(height: 1)
-            .foregroundStyle(Color.cookingPurple.opacity(0.12)), alignment: .bottom)
+            .foregroundStyle(DS.Colors.border), alignment: .bottom)
     }
 
     private var weekSwitcher: some View {

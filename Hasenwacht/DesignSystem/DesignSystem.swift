@@ -31,6 +31,11 @@ enum DS {
         static let warning = Color(hex: "BA7517")
         static let warningSurface = Color(hex: "FAEEDA")
 
+        /// Feature-Farben
+        static let cookingPurple  = Color(red: 0.45, green: 0.30, blue: 0.80)
+        static let absenceBlue    = Color(red: 0.33, green: 0.45, blue: 0.80)
+        static let absenceAmber   = Color(red: 0.80, green: 0.50, blue: 0.15)
+
         /// Neutralfarben
         static let background = Color(hex: "FFFFFF")
         static let surface = Color(hex: "F5F3EE")
@@ -91,7 +96,13 @@ enum DS {
     }
 }
 
-// MARK: - Schatten-Hilfsstruktur
+// MARK: - Farb-Extensions für direkte Color-Verwendung
+
+extension Color {
+    static let cookingPurple = Color(red: 0.45, green: 0.30, blue: 0.80)
+    static let absenceBlue   = Color(red: 0.33, green: 0.45, blue: 0.80)
+    static let absenceAmber  = Color(red: 0.80, green: 0.50, blue: 0.15)
+}
 
 struct ShadowStyle {
     let color: Color

@@ -33,9 +33,45 @@ final class LunchDaysViewModel: ObservableObject {
 
     private let holidayService = HolidayService()
     
-    /// Anzahl Werktage, die im Fetch-Fenster gehalten werden (ab Montag der aktuellen Woche).
-    /// 15 = 3 volle Wochen Mo–Fr.
-    private let workdayWindowSize = 15
+    /// Anzahl Wochen in die Zukunft ab heute.
+    private let futureWeeks = 5
+
+    /// Berechnet den frühesten Montag basierend auf dem Installations-Datum.
+    /// Mindestens 2 Wochen zurück, maximal ab Installationsdatum.
+    static func earliestMonday() -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+
+        let installDate = OnboardingService.shared.firstAppUseDate
+        let twoWeeksAgo = calendar.date(byAdding: .weekOfYear, value: -2, to: Date()) ?? Date()
+        // Nimm das spätere Datum (max 2 Wochen zurück oder Installationsdatum)
+        let fromDate = installDate < twoWeeksAgo ? twoWeeksAgo : installDate
+
+        // Finde den Montag dieser Woche
+        let weekday = calendar.component(.weekday, from: fromDate)
+        let daysSinceMonday = weekday == 1 ? 6 : weekday - 2
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: fromDate) ?? fromDate
+        return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: monday) ?? monday
+    }
+
+    /// Anzahl Wochen von earliestMonday bis +futureWeeks ab heute.
+    static func totalWeekCount() -> Int {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let earliest = earliestMonday()
+        let currentMonday = mondayOfCurrentWeek(using: calendar)
+        let weeksPast = calendar.dateComponents([.weekOfYear], from: earliest, to: currentMonday).weekOfYear ?? 0
+        return weeksPast + 6 // vergangene Wochen + diese Woche + 5 Zukunft
+    }
+
+    /// Offset der aktuellen Woche innerhalb des Gesamtfensters.
+    static func currentWeekOffset() -> Int {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let earliest = earliestMonday()
+        let currentMonday = mondayOfCurrentWeek(using: calendar)
+        return calendar.dateComponents([.weekOfYear], from: earliest, to: currentMonday).weekOfYear ?? 0
+    }
 
     private var usersListener: ListenerRegistration?
     private var attendancesListener: ListenerRegistration?
@@ -108,7 +144,7 @@ final class LunchDaysViewModel: ObservableObject {
     }
 
     private func startAttendancesListener() {
-        let workdays = Self.nextWorkdays(count: workdayWindowSize)
+        let workdays = Self.nextWorkdays(count: 200)
         guard let firstDate = workdays.first,
               let lastDate = workdays.last else { return }
 
@@ -117,8 +153,6 @@ final class LunchDaysViewModel: ObservableObject {
             to: lastDate
         ) { [weak self] attendances in
             guard let self else { return }
-            for att in attendances {
-            }
             Task { @MainActor in
                 self.attendances = attendances
                 self.rebuildDays()
@@ -127,7 +161,7 @@ final class LunchDaysViewModel: ObservableObject {
     }
     
     private func startLunchDaysListener() {
-        let workdays = Self.nextWorkdays(count: workdayWindowSize)
+        let workdays = Self.nextWorkdays(count: 200)
         guard let firstDate = workdays.first,
               let lastDate = workdays.last else { return }
 
@@ -179,7 +213,7 @@ final class LunchDaysViewModel: ObservableObject {
 
     /// Baut die DayViewModels aus den aktuellen User- und Attendance-Daten neu auf.
     private func rebuildDays() {
-        let workdays = Self.nextWorkdays(count: workdayWindowSize)
+        let workdays = Self.nextWorkdays(count: 200)
         var newDays = workdays.map { date in
             buildDayViewModel(for: date)
         }
@@ -298,16 +332,20 @@ final class LunchDaysViewModel: ObservableObject {
 
     // MARK: - Datum-Helper
 
-    /// Erzeugt n Werktage ab Montag der aktuellen Woche, auf 12:00 Uhr normalisiert.
-    /// Startet ab Montag (statt ab heute), damit vergangene Wochentage ebenfalls
-    /// mit Attendance-Daten geladen werden und in der Übersicht angezeigt werden können.
-    static func nextWorkdays(count: Int) -> [Date] {
+    /// Erzeugt alle Werktage im gesamten Fenster (Installationsdatum bis +5 Wochen).
+    static func nextWorkdays(count: Int = 200) -> [Date] {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
         var dates: [Date] = []
-        var current = mondayOfCurrentWeek(using: calendar)
+        var current = earliestMonday()
 
-        while dates.count < count {
+        // Endpunkt: Freitag der Woche currentMonday + futureWeeks
+        let currentMonday = mondayOfCurrentWeek(using: calendar)
+        guard let futureEnd = calendar.date(byAdding: .weekOfYear, value: 6, to: currentMonday) else {
+            return []
+        }
+
+        while current <= futureEnd && dates.count < 200 {
             let weekday = calendar.component(.weekday, from: current)
             if weekday >= 2 && weekday <= 6 {
                 dates.append(current)
@@ -317,12 +355,12 @@ final class LunchDaysViewModel: ObservableObject {
         return dates
     }
 
-    /// Gibt die 5 Wochentage (Mo–Fr) für den angegebenen Wochenoffset zurück.
-    /// offset 0 = aktuelle Woche, 1 = nächste Woche, usw.
+    /// Gibt die 5 Wochentage (Mo–Fr) für den angegebenen absoluten Wochenoffset zurück.
+    /// offset 0 = früheste Woche (Installationswoche), currentWeekOffset() = diese Woche.
     static func weekDates(offset: Int) -> [Date] {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
-        let monday = mondayOfCurrentWeek(using: calendar)
+        let monday = earliestMonday()
         guard let targetMonday = calendar.date(byAdding: .weekOfYear, value: offset, to: monday) else {
             return []
         }
@@ -331,8 +369,7 @@ final class LunchDaysViewModel: ObservableObject {
         }
     }
 
-    /// Liefert die DayViewModels für eine bestimmte Woche (offset 0 = diese Woche).
-    /// Tage, für die noch keine Daten geladen wurden, erhalten einen Platzhalter.
+    /// Liefert die DayViewModels für eine bestimmte Woche (absoluter offset ab earliestMonday).
     func days(forWeekOffset offset: Int) -> [DayViewModel] {
         let targetDates = Self.weekDates(offset: offset)
         let calendar = Calendar.current
@@ -340,6 +377,7 @@ final class LunchDaysViewModel: ObservableObject {
             if let match = days.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
                 return match
             }
+            // Kein Firestore-Eintrag: "Keine Daten"-Platzhalter
             let lunchDay = LunchDay(
                 id: nil, date: date,
                 isHoliday: false, holidayName: nil,
@@ -350,7 +388,8 @@ final class LunchDaysViewModel: ObservableObject {
                 attendees: allUsers,
                 absentees: [],
                 allUsers: allUsers,
-                currentUserId: currentUserId
+                currentUserId: currentUserId,
+                hasNoData: true
             )
         }
     }

@@ -14,24 +14,32 @@ struct LunchOverviewView: View {
 
     @Environment(CurrentUserService.self) private var currentUserService
     @StateObject private var viewModel = LunchDaysViewModel.shared
-    @State private var weekOffset = 0
+    @State private var weekOffset: Int = {
+        let current = LunchDaysViewModel.currentWeekOffset()
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let weekday = cal.component(.weekday, from: Date()) // 1=So, 7=Sa
+        let isWeekend = weekday == 1 || weekday == 7
+        return isWeekend ? current + 1 : current
+    }()
 
     private var weekDays: [DayViewModel] {
         viewModel.days(forWeekOffset: weekOffset)
     }
 
+    private var minWeekOffset: Int { 0 }
+    private var maxWeekOffset: Int { LunchDaysViewModel.currentWeekOffset() + 5 }
+
     /// True wenn heute nach 14:00 Uhr und die aktuelle Woche angezeigt wird —
     /// dann ist Morgen bereits gesperrt und der Banner wird eingeblendet.
     private var showCutoffBanner: Bool {
-        guard weekOffset == 0 else { return false }
+        guard weekOffset == LunchDaysViewModel.currentWeekOffset() else { return false }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
         let now = Date()
         let hour = calendar.component(.hour, from: now)
-        let weekday = calendar.component(.weekday, from: now) // 1=So … 7=Sa
-        // Freitag nach 14 Uhr: nächster Werktag ist Montag, aber Banner macht
-        // hier weniger Sinn — nur Mo–Do anzeigen.
-        let isWeekday = weekday >= 2 && weekday <= 5 // Mo–Do
+        let weekday = calendar.component(.weekday, from: now)
+        let isWeekday = weekday >= 2 && weekday <= 5
         return isWeekday && hour >= LunchDay.cutoffHour
     }
 
@@ -94,18 +102,18 @@ struct LunchOverviewView: View {
     private var weekSwitcher: some View {
         HStack(spacing: 4) {
             Button {
-                if weekOffset > 0 { weekOffset -= 1 }
+                if weekOffset > minWeekOffset { weekOffset -= 1 }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(weekOffset == 0 ? DS.Colors.textTertiary : DS.Colors.textSecondary)
+                    .foregroundStyle(weekOffset == minWeekOffset ? DS.Colors.textTertiary : DS.Colors.textSecondary)
                     .frame(width: 44, height: 44)
-                    .background(weekOffset == 0 ? Color.clear : DS.Colors.background)
+                    .background(weekOffset == minWeekOffset ? Color.clear : DS.Colors.background)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: weekOffset > 0 ? Color.black.opacity(0.06) : Color.clear,
+                    .shadow(color: weekOffset > minWeekOffset ? Color.black.opacity(0.06) : Color.clear,
                             radius: 2, y: 1)
             }
-            .disabled(weekOffset == 0)
+            .disabled(weekOffset == minWeekOffset)
 
             Spacer()
 
@@ -121,18 +129,18 @@ struct LunchOverviewView: View {
             Spacer()
 
             Button {
-                if weekOffset < 2 { weekOffset += 1 }
+                if weekOffset < maxWeekOffset { weekOffset += 1 }
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(weekOffset < 2 ? DS.Colors.textSecondary : DS.Colors.textTertiary)
+                    .foregroundStyle(weekOffset < maxWeekOffset ? DS.Colors.textSecondary : DS.Colors.textTertiary)
                     .frame(width: 44, height: 44)
-                    .background(weekOffset < 2 ? DS.Colors.background : Color.clear)
+                    .background(weekOffset < maxWeekOffset ? DS.Colors.background : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: weekOffset < 2 ? Color.black.opacity(0.06) : Color.clear,
+                    .shadow(color: weekOffset < maxWeekOffset ? Color.black.opacity(0.06) : Color.clear,
                             radius: 2, y: 1)
             }
-            .disabled(weekOffset >= 2)
+            .disabled(weekOffset >= maxWeekOffset)
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 6)
@@ -174,10 +182,14 @@ struct LunchOverviewView: View {
     // MARK: - Helpers
 
     private var weekLabel: String {
-        switch weekOffset {
-        case 0: return "Diese Woche"
-        case 1: return "Nächste Woche"
-        default: return "In \(weekOffset) Wochen"
+        let current = LunchDaysViewModel.currentWeekOffset()
+        let diff = weekOffset - current
+        switch diff {
+        case 0:  return "Diese Woche"
+        case 1:  return "Nächste Woche"
+        case 2...: return "In \(diff) Wochen"
+        case -1: return "Letzte Woche"
+        default: return "Vor \(abs(diff)) Wochen"
         }
     }
 
@@ -212,7 +224,6 @@ private struct DayCard: View {
     var showCutoffBanner: Bool = false
     let onToggle: () -> Void
 
-    /// Nach 13:00 Uhr wird der heutige Tag wie ein vergangener Tag dargestellt.
     private var isTodayOver: Bool {
         guard day.isToday else { return false }
         var calendar = Calendar(identifier: .gregorian)
@@ -222,14 +233,96 @@ private struct DayCard: View {
 
     var body: some View {
         Group {
-            if day.isPast || isTodayOver {
+            if day.hasNoData {
+                NoDataCard(day: day)
+            } else if day.isPast || isTodayOver {
                 PastCard(day: day)
             } else if day.isToday {
                 TodayCard(day: day, onToggle: onToggle)
+            } else if day.isHoliday && !day.lunchDay.forceLunch {
+                HolidayCard(day: day)
             } else {
                 UpcomingCard(day: day, showCutoffBanner: showCutoffBanner, onToggle: onToggle)
             }
         }
+    }
+}
+
+// MARK: - Feiertags-Karte
+
+private struct HolidayCard: View {
+    let day: DayViewModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            DateBlock(day: day, variant: .past)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(day.date.weekdayNameLong)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                HStack(spacing: 5) {
+                    Image(systemName: "calendar.badge.exclamationmark")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DS.Colors.warning)
+                    Text(day.holidayName ?? "Feiertag")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(DS.Colors.warning)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Text("Kein Lunch")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(DS.Colors.textTertiary)
+                .tracking(0.3)
+        }
+        .padding(16)
+        .background(DS.Colors.warningSurface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(DS.Colors.warning.opacity(0.3), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+    }
+}
+
+// MARK: - Keine Daten (vergangene Wochen ohne Firestore-Einträge)
+
+private struct NoDataCard: View {
+    let day: DayViewModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            DateBlock(day: day, variant: .past)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(day.date.weekdayNameLong)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color(UIColor.tertiaryLabel))
+                HStack(spacing: 4) {
+                    Image(systemName: "archivebox")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color(UIColor.quaternaryLabel))
+                    Text("Keine Daten")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(UIColor.quaternaryLabel))
+                }
+            }
+
+            Spacer()
+
+            Text("ARCHIV")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Color(UIColor.tertiaryLabel))
+                .tracking(0.5)
+        }
+        .padding(16)
+        .background(DS.Colors.background.opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .opacity(0.45)
     }
 }
 
