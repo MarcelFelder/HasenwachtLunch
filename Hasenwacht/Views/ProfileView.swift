@@ -274,9 +274,9 @@ struct ProfileView: View {
             // Benachrichtigungen
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Reminder am Vorabend")
+                    Text("Reminder am Vortrag")
                         .font(.system(size: 15)).foregroundStyle(DS.Colors.textPrimary)
-                    Text("Täglich um 19:00 Uhr (ausser Feiertage)")
+                    Text("Täglich um 10:00 Uhr - damit Abmeldungen nie vergessen gehen!")
                         .font(.system(size: 12)).foregroundStyle(DS.Colors.textSecondary)
                 }
                 Spacer()

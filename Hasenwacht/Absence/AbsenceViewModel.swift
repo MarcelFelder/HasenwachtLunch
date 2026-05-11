@@ -134,7 +134,6 @@ final class AbsenceViewModel: ObservableObject {
                 )
             }
         } catch {
-            print("❌ addVacation failed: \(error)")
             await MainActor.run { self.errorMessage = "Ferien konnten nicht gespeichert werden: \(error.localizedDescription)" }
         }
     }

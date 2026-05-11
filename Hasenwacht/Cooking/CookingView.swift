@@ -134,14 +134,16 @@ struct CookingView: View {
         VStack(spacing: 8) {
             ForEach(weekDays, id: \.self) { date in
                 let slot = viewModel.slot(for: date)
-                let cook = lunchViewModel.days
-                    .first { Calendar.current.isDate($0.date, inSameDayAs: date) }?
-                    .allUsers.first { $0.id == slot?.userId }
+                let dayVM = lunchViewModel.days
+                    .first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+                let cook = dayVM?.allUsers.first { $0.id == slot?.userId }
+                let absentees = dayVM?.absentees ?? []
 
                 CookingDayCard(
                     date: date,
                     slot: slot,
                     cook: cook,
+                    absentees: absentees,
                     isCurrentUserCooking: viewModel.isCurrentUserCooking(on: date),
                     onClaim:    { Task { await viewModel.claimSlot(for: date) } },
                     onRelease:  { Task { await viewModel.releaseSlot(for: date) } },
@@ -182,22 +184,31 @@ private struct CookingDayCard: View {
     let date: Date
     let slot: CookingSlot?
     let cook: User?
+    let absentees: [User]
     let isCurrentUserCooking: Bool
     let onClaim: () -> Void
     let onRelease: () -> Void
     let onEditMenu: () -> Void
 
+    private var isToday: Bool { Calendar.current.isDateInToday(date) }
+
+    /// Vergangen wenn: gestern oder früher, ODER heute nach 12:15
     private var isPast: Bool {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
-        return cal.startOfDay(for: date) < cal.startOfDay(for: Date())
+        if cal.startOfDay(for: date) < cal.startOfDay(for: Date()) { return true }
+        if isToday {
+            let h = cal.component(.hour, from: Date())
+            let m = cal.component(.minute, from: Date())
+            return h > 12 || (h == 12 && m >= 15)
+        }
+        return false
     }
-    private var isToday: Bool { Calendar.current.isDateInToday(date) }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                // Datum
+                // Datum Block
                 VStack(spacing: 1) {
                     Text(date.weekdayName.replacingOccurrences(of: ".", with: ""))
                         .font(.system(size: 9, weight: .bold)).tracking(0.5)
@@ -218,7 +229,7 @@ private struct CookingDayCard: View {
                         Text(date.weekdayNameLong)
                             .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(isPast ? DS.Colors.textTertiary : DS.Colors.textPrimary)
-                        if isToday {
+                        if isToday && !isPast {
                             Text("Heute")
                                 .font(.system(size: 9, weight: .bold)).foregroundStyle(.white).tracking(0.8)
                                 .padding(.horizontal, 6).padding(.vertical, 3)
@@ -243,6 +254,26 @@ private struct CookingDayCard: View {
                             .font(.system(size: 12))
                             .foregroundStyle(DS.Colors.textTertiary)
                     }
+
+                    // Abwesenheits-Übersicht
+                    if !absentees.isEmpty && !isPast {
+                        HStack(spacing: 5) {
+                            Image(systemName: "person.fill.xmark")
+                                .font(.system(size: 10))
+                                .foregroundStyle(DS.Colors.textTertiary)
+                            HStack(spacing: -4) {
+                                ForEach(absentees.prefix(4)) { user in
+                                    UserAvatarView(user: user, size: 14,
+                                                   borderColor: DS.Colors.background,
+                                                   borderWidth: 1.5)
+                                    .opacity(0.6)
+                                }
+                            }
+                            Text(absenteeLabel)
+                                .font(.system(size: 11))
+                                .foregroundStyle(DS.Colors.textTertiary)
+                        }
+                    }
                 }
 
                 Spacer(minLength: 0)
@@ -257,7 +288,7 @@ private struct CookingDayCard: View {
             }
             .padding(16)
 
-            // Menü-Zeile wenn aktueller User kocht
+            // Menü-Zeile wenn aktueller User kocht und noch nicht vorbei
             if isCurrentUserCooking && !isPast {
                 Divider().background(DS.Colors.border)
                 Button(action: onEditMenu) {
@@ -286,12 +317,21 @@ private struct CookingDayCard: View {
         .background(DS.Colors.background)
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(isCurrentUserCooking ? Color.cookingPurple.opacity(0.4) : DS.Colors.border,
-                        lineWidth: isCurrentUserCooking ? 2 : 1)
+                .stroke(isCurrentUserCooking && !isPast
+                        ? Color.cookingPurple.opacity(0.4) : DS.Colors.border,
+                        lineWidth: isCurrentUserCooking && !isPast ? 2 : 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: Color.black.opacity(isPast ? 0 : 0.04), radius: 4, y: 2)
         .opacity(isPast ? 0.6 : 1.0)
+    }
+
+    private var absenteeLabel: String {
+        switch absentees.count {
+        case 1:      return "\(absentees[0].firstName) fehlt"
+        case 2...3:  return absentees.prefix(3).map { $0.firstName }.joined(separator: ", ") + " fehlen"
+        default:     return "\(absentees.count) fehlen"
+        }
     }
 
     @ViewBuilder
@@ -324,6 +364,7 @@ private struct CookingDayCard: View {
         }
     }
 }
+
 
 // MARK: - Menu Edit Sheet
 

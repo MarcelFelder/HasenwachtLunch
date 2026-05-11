@@ -65,7 +65,6 @@ final class AbsenceService {
             .whereField("userId", isEqualTo: userId)
             .addSnapshotListener { snapshot, error in
                 if let error {
-                    print("❌ observeVacations error: \(error)")
                     onChange([])
                     return
                 }
@@ -82,12 +81,7 @@ final class AbsenceService {
         let ref = vacationCollection.document()
         var v = vacation
         v.id = ref.documentID
-        do {
-            try ref.setData(from: v)
-        } catch {
-            print("❌ AbsenceService.addVacation error: \(error)")
-            throw error
-        }
+        try ref.setData(from: v)
     }
 
     /// Löscht einen Ferieneintrag.

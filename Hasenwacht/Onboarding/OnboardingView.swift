@@ -95,10 +95,11 @@ struct OnboardingView: View {
                     }
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.8))
-                    .padding(.trailing, 24).padding(.top, 16)
+                    .padding(.trailing, 24)
                 }
             }
-            .frame(height: 52)
+            .padding(.top, 60) // unter Status Bar
+            .frame(height: 104)
 
             // Slides
             TabView(selection: $currentIndex) {

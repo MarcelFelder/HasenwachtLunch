@@ -28,12 +28,7 @@ final class CookingService {
         collection
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: endDate)
-            .addSnapshotListener { snapshot, error in
-                if let error {
-                    print("❌ CookingService.observeSlots: \(error)")
-                    onChange([])
-                    return
-                }
+            .addSnapshotListener { snapshot, _ in
                 let slots = snapshot?.documents.compactMap {
                     try? $0.data(as: CookingSlot.self)
                 } ?? []
