@@ -72,6 +72,9 @@ struct RootView: View {
             } else if currentUserService.currentUser == nil {
                 ProfileSetupView()
 
+            } else if currentUserService.currentUser?.isApproved != true {
+                InviteCodeView()
+
             } else {
                 MainTabView()
             }
@@ -83,7 +86,6 @@ struct RootView: View {
 
     private func handleAuthChange(userId: String?) {
         if let userId {
-            // NICHT markCompleted() hier aufrufen — das macht OnboardingView nach Profil-Setup
             Task {
                 await currentUserService.loadProfile(userId: userId)
                 await MainActor.run {
@@ -91,6 +93,8 @@ struct RootView: View {
                     LunchDaysViewModel.shared.start()
                     AbsenceViewModel.shared.start(userId: userId)
                     CookingViewModel.shared.start(userId: userId)
+                    // StatsViewModel wird lazy beim Tab-Öffnen gestartet
+                    // da es Users aus LunchDaysViewModel braucht
                 }
             }
         } else {

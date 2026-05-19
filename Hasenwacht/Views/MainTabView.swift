@@ -31,6 +31,9 @@ struct MainTabView: View {
             AbsenceView()
                 .tabItem { Label("Abwesenheiten", systemImage: "calendar.badge.minus") }
 
+            StatsView()
+                .tabItem { Label("Statistik", systemImage: "chart.bar.fill") }
+
             ProfileView()
                 .tabItem { Label("Profil", systemImage: "person.crop.circle") }
         }

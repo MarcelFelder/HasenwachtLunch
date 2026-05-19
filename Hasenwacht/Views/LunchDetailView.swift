@@ -12,6 +12,7 @@ struct LunchDetailView: View {
 
     let date: Date
 
+    @Environment(CurrentUserService.self) private var currentUserService
     @ObservedObject private var viewModel = LunchDaysViewModel.shared
     @ObservedObject private var cookingViewModel = CookingViewModel.shared
 
@@ -46,7 +47,16 @@ struct LunchDetailView: View {
                     .padding(.bottom, 40)
                 }
             } else {
-                ProgressView()
+                ScrollView {
+                    VStack(spacing: 12) {
+                        SkeletonDetailHero()
+                        SkeletonUserList(title: "Dabei", count: 3)
+                        SkeletonUserList(title: "Abgemeldet", count: 2)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
+                }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -193,7 +203,10 @@ struct LunchDetailView: View {
     // MARK: - Feiertags-Banner
 
     private func holidayBanner(day: DayViewModel) -> some View {
-        VStack(spacing: 0) {
+        let isActivator = day.lunchDay.activatedBy == viewModel.days.first?.currentUserId
+            || day.lunchDay.activatedBy == currentUserService.currentUser?.id
+
+        return VStack(spacing: 0) {
             // Header
             HStack(spacing: 8) {
                 Image(systemName: "calendar.badge.exclamationmark")
@@ -216,7 +229,7 @@ struct LunchDetailView: View {
             .background(DS.Colors.background)
             .overlay(Divider().background(DS.Colors.border), alignment: .bottom)
 
-            // Info + Toggle
+            // Info + Aktions-Button
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(day.lunchDay.forceLunch
@@ -225,33 +238,56 @@ struct LunchDetailView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(DS.Colors.textPrimary)
                     Text(day.lunchDay.forceLunch
-                         ? "Wurde manuell aktiviert"
+                         ? (isActivator ? "Tippe um es wieder zu deaktivieren" : "Wurde manuell aktiviert")
                          : "Tippe um es trotzdem zu aktivieren")
                         .font(.system(size: 12))
                         .foregroundStyle(DS.Colors.textSecondary)
                 }
                 Spacer()
-                Button {
-                    Task { await viewModel.activateLunchForHoliday(date: day.date) }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "fork.knife")
-                            .font(.system(size: 11, weight: .bold))
-                        Text(day.lunchDay.forceLunch ? "Aktiviert" : "Aktivieren")
-                            .font(.system(size: 12, weight: .semibold))
+
+                if day.lunchDay.forceLunch {
+                    // Deaktivieren — nur für den der aktiviert hat
+                    if isActivator {
+                        Button {
+                            Task { await viewModel.deactivateLunchForHoliday(date: day.date) }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 10, weight: .bold))
+                                Text("Deaktivieren")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundStyle(DS.Colors.danger)
+                            .padding(.horizontal, 12).frame(height: 34)
+                            .background(DS.Colors.dangerSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 17))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 17)
+                                    .stroke(DS.Colors.danger.opacity(0.3), lineWidth: 1)
+                            )
+                        }
                     }
-                    .foregroundStyle(day.lunchDay.forceLunch ? Color.lunchEmerald : DS.Colors.textSecondary)
-                    .padding(.horizontal, 12).frame(height: 34)
-                    .background(day.lunchDay.forceLunch ? DS.Colors.successSurface : DS.Colors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 17))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 17)
-                            .stroke(day.lunchDay.forceLunch
-                                    ? Color.lunchEmerald.opacity(0.4)
-                                    : DS.Colors.border, lineWidth: 1)
-                    )
+                } else {
+                    // Aktivieren
+                    Button {
+                        Task { await viewModel.activateLunchForHoliday(date: day.date) }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "fork.knife")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Aktivieren")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(DS.Colors.textSecondary)
+                        .padding(.horizontal, 12).frame(height: 34)
+                        .background(DS.Colors.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 17))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 17)
+                                .stroke(DS.Colors.border, lineWidth: 1)
+                        )
+                    }
                 }
-                .disabled(day.lunchDay.forceLunch)
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DS.Colors.background)

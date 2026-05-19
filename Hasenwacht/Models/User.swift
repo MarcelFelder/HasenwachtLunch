@@ -88,6 +88,8 @@ struct User: Identifiable, Codable {
     var photoBase64: String?
     var canCook: Bool
     var foodPreferences: FoodPreferences
+    /// True sobald der User den Einladungscode korrekt eingegeben hat.
+    var isApproved: Bool
     var createdAt: Date
 
     init(id: String? = nil,
@@ -97,6 +99,7 @@ struct User: Identifiable, Codable {
          photoBase64: String? = nil,
          canCook: Bool = false,
          foodPreferences: FoodPreferences = FoodPreferences(),
+         isApproved: Bool = false,
          createdAt: Date = Date()) {
         self.id = id
         self.firstName = firstName
@@ -105,6 +108,7 @@ struct User: Identifiable, Codable {
         self.photoBase64 = photoBase64
         self.canCook = canCook
         self.foodPreferences = foodPreferences
+        self.isApproved = isApproved
         self.createdAt = createdAt
     }
 

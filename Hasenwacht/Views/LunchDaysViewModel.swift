@@ -313,10 +313,8 @@ final class LunchDaysViewModel: ObservableObject {
     // MARK: - Override-Aktion
 
     /// Aktiviert das Mittagessen an einem Feiertag.
-    /// Schreibt ein lunchDays-Dokument mit forceLunch = true.
     func activateLunchForHoliday(date: Date) async {
         let holiday = holidayService.holiday(for: date)
-
         do {
             try await LunchDayService.shared.activateLunch(
                 for: date,
@@ -326,6 +324,17 @@ final class LunchDaysViewModel: ObservableObject {
         } catch {
             await MainActor.run {
                 errorMessage = "Mittagessen konnte nicht aktiviert werden: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Deaktiviert das Mittagessen an einem Feiertag (nur durch den der es aktiviert hat).
+    func deactivateLunchForHoliday(date: Date) async {
+        do {
+            try await LunchDayService.shared.deactivateLunch(for: date)
+        } catch {
+            await MainActor.run {
+                errorMessage = "Mittagessen konnte nicht deaktiviert werden: \(error.localizedDescription)"
             }
         }
     }

@@ -49,8 +49,10 @@ struct LunchOverviewView: View {
                 DS.Colors.surface.ignoresSafeArea()
 
                 if viewModel.isLoading && viewModel.days.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack(spacing: 0) {
+                        headerSection
+                        SkeletonOverviewList()
+                    }
                 } else if let error = viewModel.errorMessage {
                     errorView(message: error)
                 } else {

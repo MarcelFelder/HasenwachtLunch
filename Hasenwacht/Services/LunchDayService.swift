@@ -73,4 +73,12 @@ final class LunchDayService {
                 onChange(lunchDays)
             }
     }
+    
+    // MARK: - In LunchDayService.swift hinzufügen:
+     
+     /// Deaktiviert das Mittagessen an einem Feiertag (löscht das forceLunch-Dokument).
+     func deactivateLunch(for date: Date) async throws {
+         let documentId = LunchDay.documentId(for: date)
+         try await db.collection("lunchDays").document(documentId).delete()
+     }
 }
