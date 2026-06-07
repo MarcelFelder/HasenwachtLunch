@@ -14,6 +14,7 @@ struct LunchDetailView: View {
 
     @Environment(CurrentUserService.self) private var currentUserService
     @ObservedObject private var viewModel = LunchDaysViewModel.shared
+    @ObservedObject private var teamAbsenceViewModel = TeamAbsenceViewModel.shared
     @ObservedObject private var cookingViewModel = CookingViewModel.shared
 
     private var day: DayViewModel? {
@@ -407,7 +408,10 @@ struct LunchDetailView: View {
                 emptyRow(text: "Alle dabei")
             } else {
                 ForEach(Array(day.absentees.enumerated()), id: \.element.id) { index, user in
-                    DetailUserRow(user: user, dimmed: true)
+                    let reason = teamAbsenceViewModel.teamAbsences
+                        .first { $0.user.id == user.id }?
+                        .absenceReason(on: date)
+                    DetailUserRow(user: user, dimmed: true, absenceReason: reason)
                     if index < day.absentees.count - 1 {
                         Divider().padding(.leading, 64).background(DS.Colors.border)
                     }
@@ -459,6 +463,7 @@ struct LunchDetailView: View {
 private struct DetailUserRow: View {
     let user: User
     let dimmed: Bool
+    var absenceReason: AbsenceReason? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -471,7 +476,20 @@ private struct DetailUserRow: View {
 
             Spacer()
 
-            if dimmed {
+            // Abwesenheits-Badge
+            if let reason = absenceReason {
+                HStack(spacing: 4) {
+                    Image(systemName: reason.isVacation ? "airplane" : "repeat")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(reason.isVacation ? DS.Colors.primaryDark : Color.absenceBlue)
+                    Text(reason.label)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(reason.isVacation ? DS.Colors.primaryDark : Color.absenceBlue)
+                }
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(reason.isVacation ? DS.Colors.primarySurface : Color.absenceBlue.opacity(0.10))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else if dimmed {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(DS.Colors.textTertiary)

@@ -25,7 +25,7 @@ struct MainTabView: View {
 
             if canCook {
                 CookingView()
-                    .tabItem { Label("Kochen ᵝ", systemImage: "frying.pan") }
+                    .tabItem { Label("Kochen", systemImage: "frying.pan") }
             }
 
             AbsenceView()

@@ -65,7 +65,7 @@ extension OnboardingSlide {
         ),
         .init(
             icon: "frying.pan.fill",
-            badge: "BETA",
+            badge: nil,
             title: "Kochplan",
             subtitle: "Trag dich als Koch ein und gib\ndas Menü bekannt.",
             gradientColors: [

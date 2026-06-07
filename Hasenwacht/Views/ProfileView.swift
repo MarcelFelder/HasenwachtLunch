@@ -216,7 +216,10 @@ struct ProfileView: View {
                     .font(.system(size: 14)).foregroundStyle(DS.Colors.textSecondary)
                     .frame(width: 68, alignment: .leading)
                 TextField("Vorname", text: $firstName)
-                    .font(.system(size: 15)).autocorrectionDisabled()
+                    .font(.system(size: 15))
+                    .foregroundStyle(DS.Colors.textPrimary)
+                    .tint(DS.Colors.primary)
+                    .autocorrectionDisabled()
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DS.Colors.background)
@@ -228,7 +231,10 @@ struct ProfileView: View {
                     .font(.system(size: 14)).foregroundStyle(DS.Colors.textSecondary)
                     .frame(width: 68, alignment: .leading)
                 TextField("Nachname", text: $lastName)
-                    .font(.system(size: 15)).autocorrectionDisabled()
+                    .font(.system(size: 15))
+                    .foregroundStyle(DS.Colors.textPrimary)
+                    .tint(DS.Colors.primary)
+                    .autocorrectionDisabled()
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DS.Colors.background)
@@ -274,9 +280,9 @@ struct ProfileView: View {
             // Benachrichtigungen
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Reminder am Vortrag")
+                    Text("Reminder am Vorabend")
                         .font(.system(size: 15)).foregroundStyle(DS.Colors.textPrimary)
-                    Text("Täglich um 10:00 Uhr - damit Abmeldungen nie vergessen gehen!")
+                    Text("Täglich um 19:00 Uhr (ausser Feiertage)")
                         .font(.system(size: 12)).foregroundStyle(DS.Colors.textSecondary)
                 }
                 Spacer()
@@ -328,18 +334,8 @@ struct ProfileView: View {
             // Kochplan Toggle
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text("Kochplan")
-                            .font(.system(size: 15)).foregroundStyle(DS.Colors.textPrimary)
-                        Text("BETA")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(DS.Colors.textSecondary)
-                            .tracking(1)
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(DS.Colors.surfaceAlt)
-                            .clipShape(RoundedRectangle(cornerRadius: 5))
-                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(DS.Colors.border, lineWidth: 1))
-                    }
+                    Text("Kochplan")
+                        .font(.system(size: 15)).foregroundStyle(DS.Colors.textPrimary)
                     Text("Aktiviert den Kochen-Tab")
                         .font(.system(size: 12)).foregroundStyle(DS.Colors.textSecondary)
                 }

@@ -11,7 +11,10 @@ struct AbsenceView: View {
 
     @Environment(CurrentUserService.self) private var currentUserService
     @StateObject private var viewModel = AbsenceViewModel.shared
+    @StateObject private var teamViewModel = TeamAbsenceViewModel.shared
+    @StateObject private var lunchViewModel = LunchDaysViewModel.shared
     @State private var showAddVacation = false
+    @State private var showTeamOverview = false
 
     var body: some View {
         NavigationStack {
@@ -22,6 +25,7 @@ struct AbsenceView: View {
                         pageHeader
                         recurringCard
                         vacationCard
+                        teamOverviewCard
                         infoFooter
                     }
                     .padding(.horizontal, 16)
@@ -32,6 +36,8 @@ struct AbsenceView: View {
             .onAppear {
                 if let userId = currentUserService.currentUser?.id {
                     viewModel.start(userId: userId)
+                    let users = lunchViewModel.days.first?.allUsers ?? []
+                    teamViewModel.start(users: users)
                 }
             }
             .sheet(isPresented: $showAddVacation) {
@@ -39,6 +45,138 @@ struct AbsenceView: View {
                     Task { await viewModel.addVacation(startDate: start, endDate: end, name: name) }
                 }
             }
+        }
+    }
+
+    // MARK: - Team-Übersicht (expandable)
+
+    private var teamOverviewCard: some View {
+        VStack(spacing: 0) {
+            // Toggle-Header — immer sichtbar
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    showTeamOverview.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.absenceBlue)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Team-Übersicht")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(DS.Colors.textSecondary)
+                        Text("Wer ist wann abwesend")
+                            .font(.system(size: 11))
+                            .foregroundStyle(DS.Colors.textTertiary)
+                    }
+                    Spacer()
+                    Image(systemName: showTeamOverview ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textTertiary)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .background(DS.Colors.background)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            // Expandable Inhalt
+            if showTeamOverview {
+                Divider().background(DS.Colors.border)
+
+                // Wochen-Navigation
+                HStack(spacing: 4) {
+                    Button { teamViewModel.weekOffset -= 1 } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(DS.Colors.textSecondary)
+                            .frame(width: 30, height: 30)
+                            .background(DS.Colors.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    Spacer()
+                    VStack(spacing: 1) {
+                        Text(teamViewModel.weekLabel)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(DS.Colors.textPrimary)
+                        Text(teamViewModel.weekDateRange)
+                            .font(.system(size: 11))
+                            .foregroundStyle(DS.Colors.textTertiary)
+                    }
+                    Spacer()
+                    Button { teamViewModel.weekOffset += 1 } label: {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(DS.Colors.textSecondary)
+                            .frame(width: 30, height: 30)
+                            .background(DS.Colors.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(DS.Colors.background)
+
+                Divider().background(DS.Colors.border)
+
+                // Spalten-Header Mo–Fr
+                HStack(spacing: 0) {
+                    Spacer().frame(width: 88)
+                    ForEach(teamViewModel.currentWeekDates, id: \.self) { date in
+                        let isToday = Calendar.current.isDateInToday(date)
+                        let cal = Calendar.current
+                        VStack(spacing: 1) {
+                            Text(date.weekdayName.replacingOccurrences(of: ".", with: ""))
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(isToday ? DS.Colors.primary : DS.Colors.textTertiary)
+                            Text(String(cal.component(.day, from: date)))
+                                .font(.system(size: 11, weight: isToday ? .bold : .regular))
+                                .foregroundStyle(isToday ? DS.Colors.primary : DS.Colors.textTertiary)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    Spacer().frame(width: 16)
+                }
+                .padding(.vertical, 6)
+                .background(DS.Colors.background)
+
+                Divider().background(DS.Colors.border)
+
+                // User-Zeilen
+                ForEach(teamViewModel.teamAbsences) { info in
+                    GanttUserRow(info: info, dates: teamViewModel.currentWeekDates)
+                    if info.id != teamViewModel.teamAbsences.last?.id {
+                        Divider().background(DS.Colors.border).padding(.leading, 16)
+                    }
+                }
+
+                Divider().background(DS.Colors.border)
+
+                // Legende
+                HStack(spacing: 14) {
+                    legendDot(color: DS.Colors.primary, label: "Ferien")
+                    legendDot(color: Color.absenceBlue, label: "Wiederkehrend")
+                    legendDot(color: DS.Colors.surface, label: "Dabei", bordered: true)
+                    Spacer()
+                }
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(DS.Colors.background)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+    }
+
+    private func legendDot(color: Color, label: String, bordered: Bool = false) -> some View {
+        HStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(color)
+                .frame(width: 10, height: 10)
+                .overlay(bordered ? RoundedRectangle(cornerRadius: 3).stroke(DS.Colors.border, lineWidth: 1) : nil)
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundStyle(DS.Colors.textTertiary)
         }
     }
 
@@ -387,6 +525,58 @@ struct AddVacationSheet: View {
                         .foregroundStyle(DS.Colors.textSecondary)
                 }
             }
+        }
+    }
+}
+
+// MARK: - Gantt User Row
+
+private struct GanttUserRow: View {
+    let info: UserAbsenceInfo
+    let dates: [Date]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            // Avatar + Name
+            HStack(spacing: 6) {
+                UserAvatarView(user: info.user, size: 22)
+                Text(info.user.firstName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(DS.Colors.textPrimary)
+                    .lineLimit(1)
+            }
+            .frame(width: 80, alignment: .leading)
+            .padding(.leading, 16)
+
+            // Tages-Zellen
+            HStack(spacing: 3) {
+                ForEach(dates, id: \.self) { date in
+                    let reason = info.absenceReason(on: date)
+                    let isToday = Calendar.current.isDateInToday(date)
+
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(cellColor(for: reason))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 26)
+                        .overlay(
+                            isToday && reason == nil ?
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(DS.Colors.primary.opacity(0.4), lineWidth: 1.5)
+                                : nil
+                        )
+                }
+            }
+            .padding(.horizontal, 12)
+        }
+        .padding(.vertical, 10)
+        .background(DS.Colors.background)
+    }
+
+    private func cellColor(for reason: AbsenceReason?) -> Color {
+        guard let reason else { return DS.Colors.surface }
+        switch reason {
+        case .vacation:  return DS.Colors.primary.opacity(0.75)
+        case .recurring: return Color.absenceBlue.opacity(0.75)
         }
     }
 }

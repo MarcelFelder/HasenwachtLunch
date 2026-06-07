@@ -31,6 +31,11 @@ final class LunchDaysViewModel: ObservableObject {
     private var lunchDays: [LunchDay] = []
     private var currentUserId: String = ""
 
+    /// Zählt wie viele der 3 Listener mindestens einmal gefeuert haben.
+    /// rebuildDays() wird erst aufgerufen wenn alle 3 bereit sind.
+    private var readyListeners: Set<String> = []
+    private var allListenersReady: Bool { readyListeners.count >= 3 }
+
     private let holidayService = HolidayService()
     
     /// Anzahl Wochen in die Zukunft ab heute.
@@ -125,6 +130,7 @@ final class LunchDaysViewModel: ObservableObject {
         attendances = []
         lunchDays = []
         isLoading = true
+        readyListeners = []
     }
 
     deinit {
@@ -138,7 +144,8 @@ final class LunchDaysViewModel: ObservableObject {
             guard let self else { return }
             Task { @MainActor in
                 self.allUsers = users
-                self.rebuildDays()
+                self.readyListeners.insert("users")
+                if self.allListenersReady { self.rebuildDays() }
             }
         }
     }
@@ -155,7 +162,8 @@ final class LunchDaysViewModel: ObservableObject {
             guard let self else { return }
             Task { @MainActor in
                 self.attendances = attendances
-                self.rebuildDays()
+                self.readyListeners.insert("attendances")
+                if self.allListenersReady { self.rebuildDays() }
             }
         }
     }
@@ -172,7 +180,8 @@ final class LunchDaysViewModel: ObservableObject {
             guard let self else { return }
             Task { @MainActor in
                 self.lunchDays = lunchDays
-                self.rebuildDays()
+                self.readyListeners.insert("lunchDays")
+                if self.allListenersReady { self.rebuildDays() }
             }
         }
     }
@@ -382,11 +391,16 @@ final class LunchDaysViewModel: ObservableObject {
     func days(forWeekOffset offset: Int) -> [DayViewModel] {
         let targetDates = Self.weekDates(offset: offset)
         let calendar = Calendar.current
+        let installDate = calendar.startOfDay(for: OnboardingService.shared.firstAppUseDate)
+
         return targetDates.map { date in
             if let match = days.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
                 return match
             }
-            // Kein Firestore-Eintrag: "Keine Daten"-Platzhalter
+            // Tag liegt vor App-Installation → keine Daten verfügbar
+            let dayStart = calendar.startOfDay(for: date)
+            let isBeforeInstall = dayStart < installDate
+
             let lunchDay = LunchDay(
                 id: nil, date: date,
                 isHoliday: false, holidayName: nil,
@@ -394,11 +408,11 @@ final class LunchDaysViewModel: ObservableObject {
             )
             return DayViewModel(
                 lunchDay: lunchDay,
-                attendees: allUsers,
+                attendees: isBeforeInstall ? [] : allUsers,
                 absentees: [],
                 allUsers: allUsers,
                 currentUserId: currentUserId,
-                hasNoData: true
+                hasNoData: isBeforeInstall
             )
         }
     }

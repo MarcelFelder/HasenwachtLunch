@@ -53,7 +53,7 @@ struct InviteCodeView: View {
                     Text("Einladungscode")
                         .font(.system(size: 30, weight: .bold))
                         .foregroundStyle(Color.white)
-                    Text("Gib den Code ein den du von\ndeiner WG erhalten hast.")
+                    Text("Gib den Code ein den du von\nvom Chief-Master Marcel erhalten hast.")
                         .font(.system(size: 16))
                         .foregroundStyle(Color.white.opacity(0.80))
                         .multilineTextAlignment(.center)

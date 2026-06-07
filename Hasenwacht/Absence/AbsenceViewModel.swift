@@ -50,6 +50,47 @@ final class AbsenceViewModel: ObservableObject {
                 self?.vacations = vacations
                 LunchDaysViewModel.shared.onAbsenceChanged()
             }
+            // Beim ersten Laden: fehlende Attendances für aktive Ferien nachschreiben
+            // (Repair für User die vom Cutoff-Bug betroffen waren)
+            Task { [weak self] in
+                await self?.repairMissingVacationAttendances(vacations: vacations)
+            }
+        }
+    }
+
+    /// Repariert fehlende Attendance-Dokumente für bestehende Ferien.
+    /// Wird beim Start einmal pro Ferienperiode ausgeführt.
+    private var hasRepaired = false
+    private func repairMissingVacationAttendances(vacations: [VacationAbsence]) async {
+        guard !hasRepaired, !userId.isEmpty, !vacations.isEmpty else { return }
+        hasRepaired = true
+
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let today = cal.startOfDay(for: Date())
+
+        // Alle Werktage in laufenden/zukünftigen Ferien sammeln
+        var datesToOptOut: [Date] = []
+        for vacation in vacations {
+            let endDay = cal.startOfDay(for: vacation.endDate)
+            // Nur Ferien die noch nicht vorbei sind
+            guard endDay >= today else { continue }
+
+            let dates = bookableDatesInRange(from: vacation.startDate, to: vacation.endDate)
+                .filter { cal.startOfDay(for: $0) >= today } // nur ab heute reparieren
+            datesToOptOut.append(contentsOf: dates)
+        }
+
+        guard !datesToOptOut.isEmpty else { return }
+
+        do {
+            try await AttendanceService.shared.batchSetAttendances(
+                userId: userId,
+                dates: datesToOptOut,
+                isAttending: false
+            )
+        } catch {
+            // Stille Reparatur — wenn sie scheitert ist es kein User-Fehler
         }
     }
 
@@ -59,6 +100,7 @@ final class AbsenceViewModel: ObservableObject {
         recurringListener = nil
         vacationListener = nil
         userId = ""
+        hasRepaired = false
     }
 
     // MARK: - Recurring
@@ -103,12 +145,13 @@ final class AbsenceViewModel: ObservableObject {
 
     /// Liefert alle bookable Werktage im Lade-Fenster (3 Wochen) die dem ISO-Wochentag entsprechen.
     private func bookableDatesForWeekday(_ isoWeekday: Int) -> [Date] {
-        LunchDaysViewModel.nextWorkdays(count: 200).filter { date in
-            // Nur bookable Tage (nicht gesperrt)
-            guard LunchDay.phase(for: date, now: Date()) == .bookable else { return false }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let today = calendar.startOfDay(for: Date())
+        return LunchDaysViewModel.nextWorkdays(count: 200).filter { date in
+            // Nur ab heute (vergangene Tage nicht überschreiben)
+            guard calendar.startOfDay(for: date) >= today else { return false }
             // ISO-Wochentag prüfen
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
             let appleWeekday = calendar.component(.weekday, from: date)
             let iso = appleWeekday == 1 ? 7 : appleWeekday - 1
             return iso == isoWeekday
@@ -157,17 +200,24 @@ final class AbsenceViewModel: ObservableObject {
         }
     }
 
-    /// Alle bookable Werktage zwischen zwei Daten (inklusiv).
+    /// Alle Werktage zwischen zwei Daten (inklusiv).
+    /// Cutoff wird hier ignoriert — Ferien werden für alle Werktage im Zeitraum
+    /// als abgemeldet markiert, auch wenn sie schon vergangen sind oder im Cutoff liegen.
     private func bookableDatesInRange(from start: Date, to end: Date) -> [Date] {
-        LunchDaysViewModel.nextWorkdays(count: 200).filter { date in
-            guard LunchDay.phase(for: date, now: Date()) == .bookable else { return false }
-            var cal = Calendar(identifier: .gregorian)
-            cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
-            let day = cal.startOfDay(for: date)
-            let s   = cal.startOfDay(for: start)
-            let e   = cal.startOfDay(for: end)
-            return day >= s && day <= e
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let s = cal.startOfDay(for: start)
+        let e = cal.startOfDay(for: end)
+        var result: [Date] = []
+        var current = s
+        while current <= e {
+            let weekday = cal.component(.weekday, from: current)
+            if weekday >= 2 && weekday <= 6 { // Mo–Fr
+                result.append(cal.date(bySettingHour: 12, minute: 0, second: 0, of: current) ?? current)
+            }
+            current = cal.date(byAdding: .day, value: 1, to: current) ?? current
         }
+        return result
     }
 
     // MARK: - Absenz-Check (für LunchDaysViewModel)

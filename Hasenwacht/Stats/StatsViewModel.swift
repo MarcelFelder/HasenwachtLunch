@@ -157,39 +157,42 @@ final class StatsViewModel: ObservableObject {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
         let now = Date()
+        let today = cal.startOfDay(for: now)
+        // Frühestes Datum = firstAppUseDate (User hatte die App noch nicht davor)
+        let installDate = cal.startOfDay(for: OnboardingService.shared.firstAppUseDate)
 
         switch period {
         case .week:
             let weekday = cal.component(.weekday, from: now)
             let daysSinceMonday = weekday == 1 ? 6 : weekday - 2
             let monday = cal.date(byAdding: .day, value: -daysSinceMonday, to: now) ?? now
-            let start = cal.startOfDay(for: monday)
-            let end = cal.date(byAdding: .day, value: 4, to: start) ?? now
+            let start = max(cal.startOfDay(for: monday), installDate)
+            let end = min(cal.date(byAdding: .day, value: 4, to: monday) ?? now, today)
             return (start, end)
 
         case .month:
-            let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
-            let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? now
+            let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+            let start = max(cal.startOfDay(for: monthStart), installDate)
+            let end = today // nie in die Zukunft
             return (start, end)
 
         case .total:
-            let start = OnboardingService.shared.firstAppUseDate
-            return (cal.startOfDay(for: start), now)
+            return (installDate, today)
         }
     }
 
     private func workdaysInRange(from start: Date, to end: Date) -> [Date] {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let today = cal.startOfDay(for: Date())
+        // Nie über heute hinaus zählen
+        let effectiveEnd = min(cal.startOfDay(for: end), today)
         var result: [Date] = []
         var current = cal.startOfDay(for: start)
-        let endDay = cal.startOfDay(for: end)
 
-        while current <= endDay {
+        while current <= effectiveEnd {
             let weekday = cal.component(.weekday, from: current)
-            if weekday >= 2 && weekday <= 6 { // Mo–Fr
-                result.append(current)
-            }
+            if weekday >= 2 && weekday <= 6 { result.append(current) }
             current = cal.date(byAdding: .day, value: 1, to: current) ?? current
         }
         return result

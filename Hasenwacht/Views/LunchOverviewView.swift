@@ -27,8 +27,22 @@ struct LunchOverviewView: View {
         viewModel.days(forWeekOffset: weekOffset)
     }
 
+    @State private var showInstallToast = false
+
     private var minWeekOffset: Int { 0 }
     private var maxWeekOffset: Int { LunchDaysViewModel.currentWeekOffset() + 5 }
+
+    private func navigateBack() {
+        guard weekOffset > minWeekOffset else {
+            // Bereits auf der frühesten Woche — Toast zeigen
+            withAnimation { showInstallToast = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation { showInstallToast = false }
+            }
+            return
+        }
+        weekOffset -= 1
+    }
 
     /// True wenn heute nach 14:00 Uhr und die aktuelle Woche angezeigt wird —
     /// dann ist Morgen bereits gesperrt und der Banner wird eingeblendet.
@@ -66,12 +80,31 @@ struct LunchOverviewView: View {
     // MARK: - Layout
 
     private var mainContent: some View {
-        VStack(spacing: 0) {
-            headerSection
-            ScrollView {
-                dayListSection
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                headerSection
+                ScrollView {
+                    dayListSection
+                }
+                .background(DS.Colors.surface)
             }
-            .background(DS.Colors.surface)
+
+            // Toast: App noch nicht installiert
+            if showInstallToast {
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white)
+                    Text("App war in dieser Woche noch nicht installiert")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                .background(DS.Colors.textPrimary.opacity(0.88))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(.bottom, 24)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
     }
 
@@ -104,7 +137,7 @@ struct LunchOverviewView: View {
     private var weekSwitcher: some View {
         HStack(spacing: 4) {
             Button {
-                if weekOffset > minWeekOffset { weekOffset -= 1 }
+                navigateBack()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
@@ -305,21 +338,16 @@ private struct NoDataCard: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color(UIColor.tertiaryLabel))
                 HStack(spacing: 4) {
-                    Image(systemName: "archivebox")
+                    Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
                         .font(.system(size: 10))
                         .foregroundStyle(Color(UIColor.quaternaryLabel))
-                    Text("Keine Daten")
+                    Text("Vor App-Installation")
                         .font(.system(size: 12))
                         .foregroundStyle(Color(UIColor.quaternaryLabel))
                 }
             }
 
             Spacer()
-
-            Text("ARCHIV")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(Color(UIColor.tertiaryLabel))
-                .tracking(0.5)
         }
         .padding(16)
         .background(DS.Colors.background.opacity(0.3))

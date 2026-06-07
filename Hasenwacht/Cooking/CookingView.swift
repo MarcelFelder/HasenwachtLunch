@@ -2,7 +2,7 @@
 //  CookingView.swift
 //  Hasenwacht
 //
-//  Kochplanung-Tab (Beta).
+//  Kochplanung-Tab.
 //
 
 import SwiftUI
@@ -13,10 +13,20 @@ struct CookingView: View {
     @StateObject private var viewModel = CookingViewModel.shared
     @StateObject private var lunchViewModel = LunchDaysViewModel.shared
 
-    @State private var weekOffset = 0
+    @State private var weekOffset: Int = {
+        let current = LunchDaysViewModel.currentWeekOffset()
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let weekday = cal.component(.weekday, from: Date())
+        let isWeekend = weekday == 1 || weekday == 7
+        return isWeekend ? current + 1 : current
+    }()
     @State private var menuEditDate: Date? = nil
 
     private var weekDays: [Date] { LunchDaysViewModel.weekDates(offset: weekOffset) }
+
+    private var minWeekOffset: Int { LunchDaysViewModel.currentWeekOffset() }
+    private var maxWeekOffset: Int { LunchDaysViewModel.currentWeekOffset() + 3 }
 
     var body: some View {
         NavigationStack {
@@ -25,7 +35,6 @@ struct CookingView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         headerSection
-                        betaBanner
                         dayListSection
                     }
                 }
@@ -57,19 +66,6 @@ struct CookingView: View {
                         .foregroundStyle(DS.Colors.textPrimary)
                 }
                 Spacer()
-                Text("BETA")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(DS.Colors.textPrimary)
-                    .tracking(1.5)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(DS.Colors.background)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(DS.Colors.border, lineWidth: 1.5)
-                    )
-                    .shadow(color: Color.black.opacity(0.06), radius: 3, y: 1)
             }
             weekSwitcher
         }
@@ -79,34 +75,17 @@ struct CookingView: View {
         .background(DS.Colors.surface)
     }
 
-    private var betaBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "info.circle")
-                .font(.system(size: 13))
-                .foregroundStyle(DS.Colors.textSecondary)
-            Text("Dieses Feature ist in der Entwicklung. Feedback willkommen!")
-                .font(.system(size: 12))
-                .foregroundStyle(DS.Colors.textSecondary)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(DS.Colors.surfaceAlt)
-        .overlay(Rectangle().frame(height: 1)
-            .foregroundStyle(DS.Colors.border), alignment: .bottom)
-    }
-
     private var weekSwitcher: some View {
         HStack(spacing: 4) {
-            Button { if weekOffset > 0 { weekOffset -= 1 } } label: {
+            Button { if weekOffset > minWeekOffset { weekOffset -= 1 } } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(weekOffset == 0 ? DS.Colors.textTertiary : DS.Colors.textSecondary)
+                    .foregroundStyle(weekOffset == minWeekOffset ? DS.Colors.textTertiary : DS.Colors.textSecondary)
                     .frame(width: 44, height: 44)
-                    .background(weekOffset == 0 ? Color.clear : DS.Colors.background)
+                    .background(weekOffset == minWeekOffset ? Color.clear : DS.Colors.background)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .disabled(weekOffset == 0)
+            .disabled(weekOffset == minWeekOffset)
 
             Spacer()
             VStack(spacing: 2) {
@@ -115,15 +94,15 @@ struct CookingView: View {
             }
             Spacer()
 
-            Button { if weekOffset < 2 { weekOffset += 1 } } label: {
+            Button { if weekOffset < maxWeekOffset { weekOffset += 1 } } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(weekOffset < 2 ? DS.Colors.textSecondary : DS.Colors.textTertiary)
+                    .foregroundStyle(weekOffset < maxWeekOffset ? DS.Colors.textSecondary : DS.Colors.textTertiary)
                     .frame(width: 44, height: 44)
-                    .background(weekOffset < 2 ? DS.Colors.background : Color.clear)
+                    .background(weekOffset < maxWeekOffset ? DS.Colors.background : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .disabled(weekOffset >= 2)
+            .disabled(weekOffset >= maxWeekOffset)
         }
         .padding(.horizontal, 6).padding(.vertical, 6)
         .background(DS.Colors.surfaceAlt)
@@ -161,10 +140,14 @@ struct CookingView: View {
     }
 
     private var weekLabel: String {
-        switch weekOffset {
-        case 0: return "Diese Woche"
-        case 1: return "Nächste Woche"
-        default: return "In \(weekOffset) Wochen"
+        let current = LunchDaysViewModel.currentWeekOffset()
+        let diff = weekOffset - current
+        switch diff {
+        case 0:    return "Diese Woche"
+        case 1:    return "Nächste Woche"
+        case 2...: return "In \(diff) Wochen"
+        case -1:   return "Letzte Woche"
+        default:   return "Vor \(abs(diff)) Wochen"
         }
     }
 

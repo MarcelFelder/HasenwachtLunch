@@ -93,8 +93,15 @@ struct RootView: View {
                     LunchDaysViewModel.shared.start()
                     AbsenceViewModel.shared.start(userId: userId)
                     CookingViewModel.shared.start(userId: userId)
-                    // StatsViewModel wird lazy beim Tab-Öffnen gestartet
-                    // da es Users aus LunchDaysViewModel braucht
+                }
+                // TeamAbsenceViewModel nach Users laden
+                let users = await withCheckedContinuation { cont in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        cont.resume(returning: LunchDaysViewModel.shared.days.first?.allUsers ?? [])
+                    }
+                }
+                await MainActor.run {
+                    TeamAbsenceViewModel.shared.start(users: users)
                 }
             }
         } else {
