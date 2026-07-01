@@ -6,7 +6,8 @@
 //
 //  Kapselt alle Firestore-Operationen für die lunchDays-Collection.
 //  Ein Dokument existiert pro Tag NUR dann, wenn der Default überschrieben
-//  wurde — d.h. wenn jemand "Mittagessen aktivieren" gedrückt hat.
+//  wurde — d.h. wenn jemand "Mittagessen aktivieren" gedrückt oder den
+//  Tag gestrichen hat.
 //
 //  Für normale Werktage und nicht-übersteuerte Feiertage gibt es kein Dokument.
 //
@@ -28,7 +29,7 @@ final class LunchDayService {
         db.collection("lunchDays")
     }
 
-    // MARK: - forceLunch setzen
+    // MARK: - forceLunch (Feiertag aktivieren)
 
     /// Aktiviert das Mittagessen an einem (Feiertag-)Tag.
     /// - Parameters:
@@ -48,6 +49,50 @@ final class LunchDayService {
         try lunchDaysCollection.document(documentId).setData(from: lunchDay, merge: true)
     }
 
+    /// Deaktiviert das Mittagessen an einem Feiertag (löscht das forceLunch-Dokument).
+    func deactivateLunch(for date: Date) async throws {
+        let documentId = LunchDay.documentId(for: date)
+        try await lunchDaysCollection.document(documentId).delete()
+    }
+
+    // MARK: - Tag streichen (Cancel)
+
+    /// Streicht einen Tag (setzt isCancelled = true).
+    /// Nutzt setData mit merge damit bestehende Felder (z.B. forceLunch) erhalten bleiben.
+    func cancelLunch(for date: Date, userId: String) async throws {
+        let documentId = LunchDay.documentId(for: date)
+        let data: [String: Any] = [
+            "date": date,
+            "isCancelled": true,
+            "cancelledBy": userId,
+            // Felder die existieren müssen falls das Dokument neu erstellt wird:
+            "isHoliday": false,
+            "forceLunch": false
+        ]
+        try await lunchDaysCollection.document(documentId).setData(data, merge: true)
+    }
+
+    /// Hebt die Streichung auf (setzt isCancelled = false und entfernt cancelledBy).
+    /// Wenn das Dokument sonst keine Override-Infos enthält (kein Feiertag aktiviert),
+    /// wird es ganz gelöscht — sonst nur die Cancel-Felder entfernt.
+    func uncancelLunch(for date: Date) async throws {
+        let documentId = LunchDay.documentId(for: date)
+        let ref = lunchDaysCollection.document(documentId)
+        let snapshot = try await ref.getDocument()
+        let data = snapshot.data() ?? [:]
+        let forceLunch = data["forceLunch"] as? Bool ?? false
+        if forceLunch {
+            // Dokument behalten — nur Cancellation aufheben
+            try await ref.updateData([
+                "isCancelled": false,
+                "cancelledBy": FieldValue.delete()
+            ])
+        } else {
+            // Dokument ganz löschen — es gibt keinen anderen Override
+            try await ref.delete()
+        }
+    }
+
     // MARK: - Listener für einen Datumsbereich
 
     /// Hört auf Änderungen aller LunchDay-Dokumente innerhalb des Datumsbereichs.
@@ -62,7 +107,7 @@ final class LunchDayService {
         return lunchDaysCollection
             .whereField("date", isGreaterThanOrEqualTo: startDate)
             .whereField("date", isLessThanOrEqualTo: endDate)
-            .addSnapshotListener { snapshot, error in
+            .addSnapshotListener { snapshot, _ in
                 guard let documents = snapshot?.documents else {
                     onChange([])
                     return
@@ -73,12 +118,4 @@ final class LunchDayService {
                 onChange(lunchDays)
             }
     }
-    
-    // MARK: - In LunchDayService.swift hinzufügen:
-     
-     /// Deaktiviert das Mittagessen an einem Feiertag (löscht das forceLunch-Dokument).
-     func deactivateLunch(for date: Date) async throws {
-         let documentId = LunchDay.documentId(for: date)
-         try await db.collection("lunchDays").document(documentId).delete()
-     }
 }

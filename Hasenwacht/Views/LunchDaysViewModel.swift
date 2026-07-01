@@ -29,6 +29,8 @@ final class LunchDaysViewModel: ObservableObject {
     private var allUsers: [User] = []
     private var attendances: [Attendance] = []
     private var lunchDays: [LunchDay] = []
+    /// userId → abwesende ISO-Wochentage (1=Mo…5=Fr)
+    private var recurringAbsences: [String: [Int]] = [:]
     private var currentUserId: String = ""
 
     /// Zählt wie viele der 3 Listener mindestens einmal gefeuert haben.
@@ -81,6 +83,7 @@ final class LunchDaysViewModel: ObservableObject {
     private var usersListener: ListenerRegistration?
     private var attendancesListener: ListenerRegistration?
     private var lunchDaysListener: ListenerRegistration?
+    private var recurringAbsencesListener: ListenerRegistration?
     
     /// Timer für periodische Phase-Aktualisierung.
     /// Notwendig, weil Phasenwechsel zeitbasiert sind (14:00, 12:15, Mitternacht) und SwiftUI sonst keinen Anlass zum Re-Render hat.
@@ -102,6 +105,11 @@ final class LunchDaysViewModel: ObservableObject {
         rebuildDays()
     }
 
+    /// Löst einen Rebuild aus wenn Kinder/Overrides sich geändert haben.
+    func onChildrenChanged() {
+        rebuildDays()
+    }
+
     // MARK: - Lifecycle
 
     /// Startet die Listener für User und Attendances.
@@ -112,6 +120,7 @@ final class LunchDaysViewModel: ObservableObject {
         startUsersListener()
         startAttendancesListener()
         startLunchDaysListener()
+        startRecurringAbsencesListener()
         startPhaseUpdateTimer()
     }
 
@@ -123,6 +132,8 @@ final class LunchDaysViewModel: ObservableObject {
         attendancesListener = nil
         lunchDaysListener?.remove()
         lunchDaysListener = nil
+        recurringAbsencesListener?.remove()
+        recurringAbsencesListener = nil
         phaseUpdateTimer?.invalidate()
         phaseUpdateTimer = nil
         days = []
@@ -185,7 +196,26 @@ final class LunchDaysViewModel: ObservableObject {
             }
         }
     }
-    
+
+    private func startRecurringAbsencesListener() {
+        let db = Firestore.firestore()
+        recurringAbsencesListener = db.collection("recurringAbsences")
+            .addSnapshotListener { [weak self] snapshot, _ in
+                guard let self else { return }
+                // DocumentID = userId, Inhalt = absentWeekdays
+                var map: [String: [Int]] = [:]
+                for doc in snapshot?.documents ?? [] {
+                    if let absence = try? doc.data(as: RecurringAbsence.self) {
+                        map[doc.documentID] = absence.absentWeekdays
+                    }
+                }
+                Task { @MainActor in
+                    self.recurringAbsences = map
+                    if self.allListenersReady { self.rebuildDays() }
+                }
+            }
+    }
+
     /// Startet einen Timer, der jede Minute prüft, ob sich die Phase irgendeines Tages geändert hat. Wenn ja, wird rebuildDays() aufgerufen, damit SwiftUI die UI aktualisiert.
     ///
     /// Hintergrund: Phasen-Übergänge sind zeitbasiert (14:00, 12:15, Mitternacht). Ohne Timer würde die UI bis zum nächsten Datenwechsel oder App-Restart "eingefroren" bleiben.
@@ -252,18 +282,37 @@ final class LunchDaysViewModel: ObservableObject {
 
         let attendancesForDay = attendances.filter { calendar.isDate($0.date, inSameDayAs: date) }
 
-        // Opt-Out-UserIds: explizit abgemeldete User (isAttending=false in Firestore).
-        // Absenz-Regeln schreiben direkt Attendance-Dokumente → kein lokaler Override nötig.
-        let optedOutUserIds = Set(
+        // Opt-Out-UserIds aus expliziten Attendance-Dokumenten (isAttending=false)
+        let explicitOptOuts = Set(
             attendancesForDay
                 .filter { !$0.isAttending }
                 .map { $0.userId }
         )
+        // Explizit angemeldete User (isAttending=true) — überschreiben Absenz-Regeln
+        let explicitOptIns = Set(
+            attendancesForDay
+                .filter { $0.isAttending }
+                .map { $0.userId }
+        )
+
+        // Wiederkehrende Absenzen direkt auswerten (robust auch ohne Attendance-Dokument)
+        let appleWeekday = calendar.component(.weekday, from: date)
+        let isoWeekday = appleWeekday == 1 ? 7 : appleWeekday - 1
+        let recurringOptOuts = Set(
+            recurringAbsences
+                .filter { _, weekdays in weekdays.contains(isoWeekday) }
+                .map { userId, _ in userId }
+        )
+
+        // Zusammenführen: recurring + explicit opt-outs, minus explicit opt-ins
+        let optedOutUserIds = (explicitOptOuts.union(recurringOptOuts)).subtracting(explicitOptIns)
 
         let attendees: [User]
         let absentees: [User]
 
-        if isLunchHappening {
+        let isCancelled = lunchDayOverride?.isCancelled ?? false
+
+        if isLunchHappening && !isCancelled {
             attendees = allUsers.filter { user in
                 guard let userId = user.id else { return false }
                 return !optedOutUserIds.contains(userId)
@@ -277,7 +326,7 @@ final class LunchDaysViewModel: ObservableObject {
             absentees = allUsers
         }
 
-        let lunchDay = LunchDay(
+        var lunchDay = LunchDay(
             id: lunchDayOverride?.id,
             date: date,
             isHoliday: holiday != nil,
@@ -285,6 +334,8 @@ final class LunchDaysViewModel: ObservableObject {
             forceLunch: forceLunch,
             activatedBy: lunchDayOverride?.activatedBy
         )
+        lunchDay.isCancelled = isCancelled
+        lunchDay.cancelledBy = lunchDayOverride?.cancelledBy
 
         return DayViewModel(
             lunchDay: lunchDay,
@@ -348,6 +399,29 @@ final class LunchDaysViewModel: ObservableObject {
         }
     }
 
+    /// Streicht einen Tag (kein Mittagessen). Nur erlaubt wenn User dabei ist.
+    func cancelLunch(date: Date) async {
+        guard !currentUserId.isEmpty else { return }
+        do {
+            try await LunchDayService.shared.cancelLunch(for: date, userId: currentUserId)
+        } catch {
+            await MainActor.run {
+                errorMessage = "Tag konnte nicht gestrichen werden: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Hebt die Streichung auf (nur durch den der gestrichen hat).
+    func uncancelLunch(date: Date) async {
+        do {
+            try await LunchDayService.shared.uncancelLunch(for: date)
+        } catch {
+            await MainActor.run {
+                errorMessage = "Tag konnte nicht aktiviert werden: \(error.localizedDescription)"
+            }
+        }
+    }
+
     // MARK: - Datum-Helper
 
     /// Erzeugt alle Werktage im gesamten Fenster (Installationsdatum bis +5 Wochen).
@@ -357,13 +431,13 @@ final class LunchDaysViewModel: ObservableObject {
         var dates: [Date] = []
         var current = earliestMonday()
 
-        // Endpunkt: Freitag der Woche currentMonday + futureWeeks
+        // Endpunkt: Freitag der Woche currentMonday + 10 Wochen (Puffer über max sichtbare +5)
         let currentMonday = mondayOfCurrentWeek(using: calendar)
-        guard let futureEnd = calendar.date(byAdding: .weekOfYear, value: 6, to: currentMonday) else {
+        guard let futureEnd = calendar.date(byAdding: .weekOfYear, value: 10, to: currentMonday) else {
             return []
         }
 
-        while current <= futureEnd && dates.count < 200 {
+        while current <= futureEnd && dates.count < 300 {
             let weekday = calendar.component(.weekday, from: current)
             if weekday >= 2 && weekday <= 6 {
                 dates.append(current)

@@ -16,6 +16,7 @@ struct LunchDetailView: View {
     @ObservedObject private var viewModel = LunchDaysViewModel.shared
     @ObservedObject private var teamAbsenceViewModel = TeamAbsenceViewModel.shared
     @ObservedObject private var cookingViewModel = CookingViewModel.shared
+    @ObservedObject private var childrenViewModel = ChildrenViewModel.shared
 
     private var day: DayViewModel? {
         viewModel.days.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
@@ -39,8 +40,10 @@ struct LunchDetailView: View {
                         if day.isHoliday {
                             holidayBanner(day: day)
                         }
+                        cancelCard(day: day)
                         cookingCard
                         attendeesCard(day: day)
+                        childrenCard(day: day)
                         absenteesCard(day: day)
                     }
                     .padding(.horizontal, 16)
@@ -199,6 +202,162 @@ struct LunchDetailView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+    }
+
+    // MARK: - Tag-Streichung Card
+
+    private func cancelCard(day: DayViewModel) -> some View {
+        let userId = currentUserService.currentUser?.id ?? ""
+        let userIsAttending = day.attendees.contains { $0.id == userId }
+        let isCancelledByMe = day.cancelledBy == userId
+
+        return Group {
+            if day.isCancelled {
+                // Tag ist gestrichen — Info-Card mit "Wieder aktivieren" (nur für den der gestrichen hat)
+                cancelledStateCard(day: day, canUncancel: isCancelledByMe)
+            } else if userIsAttending && !day.isPast && !day.lunchDay.isLocked {
+                // Tag normal — Option zum Streichen (nur für angemeldete User)
+                cancelActionCard(day: day)
+            }
+        }
+    }
+
+    /// Zeigt "Tag ist gestrichen" mit optionalem Reaktivieren-Button.
+    private func cancelledStateCard(day: DayViewModel, canUncancel: Bool) -> some View {
+        let cancellerName = day.allUsers.first { $0.id == day.cancelledBy }?.firstName ?? "Jemand"
+
+        return VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DS.Colors.danger)
+                Text("Tag gestrichen")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                Spacer()
+                Text("ABGESAGT")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(DS.Colors.danger)
+                    .tracking(0.8)
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(DS.Colors.dangerSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(DS.Colors.background)
+            .overlay(Divider().background(DS.Colors.border), alignment: .bottom)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Kein Mittagessen heute")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textPrimary)
+                    Text(canUncancel
+                         ? "Du hast diesen Tag gestrichen"
+                         : "Gestrichen von \(cancellerName)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(DS.Colors.textSecondary)
+                }
+                Spacer()
+                if canUncancel {
+                    Button {
+                        Task { await viewModel.uncancelLunch(date: day.date) }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.uturn.backward")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("Aktivieren")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(DS.Colors.textSecondary)
+                        .padding(.horizontal, 12).frame(height: 34)
+                        .background(DS.Colors.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 17))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 17)
+                                .stroke(DS.Colors.border, lineWidth: 1)
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .background(DS.Colors.background)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(DS.Colors.danger.opacity(0.3), lineWidth: 1)
+        )
+        .background(DS.Colors.dangerSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+    }
+
+    /// "Tag streichen" Aktions-Karte — nur für angemeldete User sichtbar.
+    @State private var showCancelConfirmation = false
+
+    private func cancelActionCard(day: DayViewModel) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "xmark.circle")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                Text("Tag streichen")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(DS.Colors.background)
+            .overlay(Divider().background(DS.Colors.border), alignment: .bottom)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Heute findet kein Lunch statt?")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textPrimary)
+                    Text("Streiche den Tag — alle anderen sehen die Absage")
+                        .font(.system(size: 12))
+                        .foregroundStyle(DS.Colors.textSecondary)
+                }
+                Spacer()
+                Button {
+                    showCancelConfirmation = true
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("Streichen")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(DS.Colors.danger)
+                    .padding(.horizontal, 12).frame(height: 34)
+                    .background(DS.Colors.dangerSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 17))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 17)
+                            .stroke(DS.Colors.danger.opacity(0.3), lineWidth: 1)
+                    )
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .background(DS.Colors.background)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .confirmationDialog(
+            "Tag wirklich streichen?",
+            isPresented: $showCancelConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Ja, streichen", role: .destructive) {
+                Task { await viewModel.cancelLunch(date: day.date) }
+            }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Alle anderen User sehen die Absage. Du kannst sie jederzeit wieder aufheben.")
+        }
     }
 
     // MARK: - Feiertags-Banner
@@ -375,17 +534,180 @@ struct LunchDetailView: View {
         .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
     }
 
+    // MARK: - Children Card (eigene Kinder für diesen Tag steuern)
+
+    private func childrenCard(day: DayViewModel) -> some View {
+        let userId = currentUserService.currentUser?.id ?? ""
+        let myChildren = childrenViewModel.children(forUserId: userId)
+        let attendingIds = Set(day.attendees.compactMap { $0.id })
+
+        return Group {
+            if !myChildren.isEmpty && !day.isPast {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 8) {
+                        Circle().fill(DS.Colors.primary).frame(width: 6, height: 6)
+                        Text("Meine Kinder")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(DS.Colors.textSecondary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 12)
+                    .background(DS.Colors.background)
+                    .overlay(Divider().background(DS.Colors.border), alignment: .bottom)
+
+                    ForEach(Array(myChildren.enumerated()), id: \.element.id) { index, child in
+                        childToggleRow(
+                            child: child,
+                            day: day,
+                            currentUserId: userId,
+                            attendingIds: attendingIds
+                        )
+                        if index < myChildren.count - 1 {
+                            Divider().padding(.leading, 16).background(DS.Colors.border)
+                        }
+                    }
+                }
+                .background(DS.Colors.background)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+                .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+            }
+        }
+    }
+
+    /// Eine Toggle-Zeile pro Kind. Logik:
+    ///  - Wenn primary parent dabei → automatisch dabei (für secondary parent nicht änderbar)
+    ///  - Wenn primary parent nicht da → kann secondary parent das Kind übernehmen
+    ///  - Wenn aktueller User = primary → kann selbst toggeln (abmelden für heute)
+    private func childToggleRow(child: Child,
+                                day: DayViewModel,
+                                currentUserId: String,
+                                attendingIds: Set<String>) -> some View {
+
+        let isPrimary = child.primaryParentId == currentUserId
+        let primaryAttending = attendingIds.contains(child.primaryParentId)
+        let currentTaker = childrenViewModel.takingParent(
+            for: child, on: day.date, attendingUserIds: attendingIds
+        )
+        let primaryParentUser = day.allUsers.first { $0.id == child.primaryParentId }
+
+        return HStack(spacing: 12) {
+            // Avatar/Initial
+            ZStack {
+                Circle().fill(DS.Colors.primarySurface).frame(width: 32, height: 32)
+                Text(String(child.name.prefix(1)).uppercased())
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(DS.Colors.primaryDark)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(child.name)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(DS.Colors.textPrimary)
+
+                if let taker = currentTaker {
+                    if taker == currentUserId {
+                        Text(isPrimary ? "Standard: kommt mit dir" : "Du übernimmst")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.lunchEmerald)
+                    } else {
+                        let takerUser = day.allUsers.first { $0.id == taker }
+                        Text("Kommt mit \(takerUser?.firstName ?? "?")")
+                            .font(.system(size: 11))
+                            .foregroundStyle(DS.Colors.textTertiary)
+                    }
+                } else {
+                    Text(primaryAttending
+                         ? "—"
+                         : "\(primaryParentUser?.firstName ?? "Hauptbetreuer") nicht dabei")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DS.Colors.textTertiary)
+                }
+            }
+
+            Spacer()
+
+            childToggleButton(
+                child: child,
+                day: day,
+                isPrimary: isPrimary,
+                primaryAttending: primaryAttending,
+                currentTaker: currentTaker,
+                currentUserId: currentUserId
+            )
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(DS.Colors.background)
+    }
+
+    @ViewBuilder
+    private func childToggleButton(child: Child,
+                                   day: DayViewModel,
+                                   isPrimary: Bool,
+                                   primaryAttending: Bool,
+                                   currentTaker: String?,
+                                   currentUserId: String) -> some View {
+        let isDabei = currentTaker != nil
+        let iCanToggle: Bool = {
+            // Primary kann immer toggeln
+            if isPrimary { return true }
+            // Secondary nur wenn primary nicht da
+            if !primaryAttending { return true }
+            // Wenn primary dabei ist und secondary das Kind übernommen hat → kann zurückgeben
+            if currentTaker == currentUserId { return true }
+            return false
+        }()
+
+        Button {
+            Task {
+                guard let childId = child.id else { return }
+                if isDabei {
+                    // Aktuell dabei → abmelden
+                    await childrenViewModel.setOverride(
+                        childId: childId, date: day.date, takingParentId: nil
+                    )
+                } else {
+                    // Aktuell nicht dabei → ich übernehme
+                    await childrenViewModel.setOverride(
+                        childId: childId, date: day.date, takingParentId: currentUserId
+                    )
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: isDabei ? "checkmark" : "plus")
+                    .font(.system(size: 11, weight: .bold))
+                Text(isDabei ? "Dabei" : "Mitnehmen")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .foregroundStyle(isDabei ? .white : DS.Colors.primary)
+            .padding(.horizontal, 12).frame(height: 32)
+            .background(isDabei ? DS.Colors.primary : DS.Colors.primarySurface)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .disabled(!iCanToggle)
+        .opacity(iCanToggle ? 1.0 : 0.5)
+        .buttonStyle(ScaleButtonStyle())
+    }
+
     // MARK: - Dabei Section (immer sichtbar)
 
     private func attendeesCard(day: DayViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let attendingIds = Set(day.attendees.compactMap { $0.id })
+
+        return VStack(alignment: .leading, spacing: 0) {
             sectionHeader(title: "Dabei", count: day.attendees.count, color: Color.lunchEmerald)
 
             if day.attendees.isEmpty {
                 emptyRow(text: "Niemand angemeldet")
             } else {
                 ForEach(Array(day.attendees.enumerated()), id: \.element.id) { index, user in
-                    DetailUserRow(user: user, dimmed: false)
+                    let kids = childrenViewModel.childrenTakenBy(
+                        userId: user.id ?? "",
+                        on: day.date,
+                        attendingUserIds: attendingIds
+                    )
+                    DetailUserRow(user: user, dimmed: false, childrenTaken: kids)
                     if index < day.attendees.count - 1 {
                         Divider().padding(.leading, 64).background(DS.Colors.border)
                     }
@@ -464,6 +786,9 @@ private struct DetailUserRow: View {
     let user: User
     let dimmed: Bool
     var absenceReason: AbsenceReason? = nil
+    var childrenTaken: [Child] = []
+
+    @State private var showChildrenPopover = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -473,6 +798,44 @@ private struct DetailUserRow: View {
             Text(user.fullName)
                 .font(.system(size: 15))
                 .foregroundStyle(dimmed ? DS.Colors.textTertiary : DS.Colors.textPrimary)
+
+            // Kinder-Badge "+N"
+            if !childrenTaken.isEmpty {
+                Button {
+                    showChildrenPopover = true
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "figure.child")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("+\(childrenTaken.count)")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(DS.Colors.primaryDark)
+                    .padding(.horizontal, 7).padding(.vertical, 3)
+                    .background(DS.Colors.primarySurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .popover(isPresented: $showChildrenPopover) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Kinder dabei")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(DS.Colors.textTertiary)
+                            .tracking(0.5)
+                        ForEach(childrenTaken) { child in
+                            HStack(spacing: 6) {
+                                Image(systemName: "figure.child")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(DS.Colors.primary)
+                                Text(child.name)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(DS.Colors.textPrimary)
+                            }
+                        }
+                    }
+                    .padding(14)
+                    .presentationCompactAdaptation(.popover)
+                }
+            }
 
             Spacer()
 

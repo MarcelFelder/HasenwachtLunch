@@ -33,8 +33,14 @@ struct LunchDay: Identifiable, Codable {
     var forceLunch: Bool
     var activatedBy: String?
 
+    /// True wenn der Tag manuell von einem User gestrichen wurde.
+    var isCancelled: Bool = false
+    /// User der den Tag gestrichen hat (darf ihn auch wieder aktivieren).
+    var cancelledBy: String?
+
     var hasLunch: Bool {
-        !isHoliday || forceLunch
+        guard !isCancelled else { return false }
+        return !isHoliday || forceLunch
     }
 
     // MARK: - Phase-Konfiguration
@@ -44,7 +50,7 @@ struct LunchDay: Identifiable, Codable {
     static let cutoffHour = 14
 
     /// Uhrzeit, ab der "Mittagessen vorbei" gilt.
-    static let lunchOverTime = (hour: 13, minute: 0)
+    static let lunchOverTime = (hour: 12, minute: 15)
 
     // MARK: - Phase-Bestimmung
 

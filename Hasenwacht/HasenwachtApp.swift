@@ -93,6 +93,7 @@ struct RootView: View {
                     LunchDaysViewModel.shared.start()
                     AbsenceViewModel.shared.start(userId: userId)
                     CookingViewModel.shared.start(userId: userId)
+                    ChildrenViewModel.shared.start()
                 }
                 // TeamAbsenceViewModel nach Users laden
                 let users = await withCheckedContinuation { cont in
@@ -108,6 +109,7 @@ struct RootView: View {
             LunchDaysViewModel.shared.stop()
             AbsenceViewModel.shared.stop()
             CookingViewModel.shared.stop()
+            ChildrenViewModel.shared.stop()
             currentUserService.clear()
             NotificationService.shared.cancelAllReminders()
         }

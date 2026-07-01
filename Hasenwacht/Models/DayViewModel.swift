@@ -53,6 +53,8 @@ struct DayViewModel: Identifiable, Hashable {
     var date: Date { lunchDay.date }
     var isHoliday: Bool { lunchDay.isHoliday }
     var holidayName: String? { lunchDay.holidayName }
+    var isCancelled: Bool { lunchDay.isCancelled }
+    var cancelledBy: String? { lunchDay.cancelledBy }
     var hasLunch: Bool { lunchDay.hasLunch }
 
     var attendingCount: Int { attendees.count }

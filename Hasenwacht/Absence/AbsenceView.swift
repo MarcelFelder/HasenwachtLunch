@@ -16,6 +16,17 @@ struct AbsenceView: View {
     @State private var showAddVacation = false
     @State private var showTeamOverview = false
 
+    /// Nur Ferien deren Enddatum heute oder in der Zukunft liegt.
+    /// Abgelaufene Ferien werden ausgeblendet aber in Firestore behalten
+    /// (z.B. für historische Statistiken).
+    private var activeVacations: [VacationAbsence] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        return viewModel.vacations.filter {
+            cal.startOfDay(for: $0.endDate) >= today
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -293,7 +304,7 @@ struct AbsenceView: View {
             .background(DS.Colors.background)
             .overlay(Divider().background(DS.Colors.border), alignment: .bottom)
 
-            if viewModel.vacations.isEmpty {
+            if activeVacations.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "airplane.circle")
                         .font(.system(size: 32, weight: .light))
@@ -306,11 +317,11 @@ struct AbsenceView: View {
                 .padding(.vertical, 24)
                 .background(DS.Colors.background)
             } else {
-                ForEach(Array(viewModel.vacations.enumerated()), id: \.element.id) { index, vacation in
+                ForEach(Array(activeVacations.enumerated()), id: \.element.id) { index, vacation in
                     VacationRow(vacation: vacation) {
                         Task { await viewModel.deleteVacation(vacation) }
                     }
-                    if index < viewModel.vacations.count - 1 {
+                    if index < activeVacations.count - 1 {
                         Divider().background(DS.Colors.border).padding(.leading, 16)
                     }
                 }

@@ -15,6 +15,9 @@ struct ProfileView: View {
     @Environment(NotificationService.self) private var notificationService
     @Environment(OnboardingService.self)  private var onboardingService
 
+    @StateObject private var childrenViewModel = ChildrenViewModel.shared
+    @StateObject private var lunchViewModel = LunchDaysViewModel.shared
+
     @State private var isEditing = false
     @State private var firstName = ""
     @State private var lastName = ""
@@ -46,6 +49,7 @@ struct ProfileView: View {
                         heroSection
                         if isEditing { nameEditSection }
                         if isEditing { saveError.map { errorBanner($0) } }
+                        childrenSection
                         accountCard
                         settingsCard(
                             notifications: $notifications.remindersEnabled,
@@ -100,6 +104,20 @@ struct ProfileView: View {
                     }
                 }
                 .disabled(!hasChanges || isSaving)
+            }
+        }
+    }
+
+    // MARK: - Children Section
+
+    private var childrenSection: some View {
+        Group {
+            if let userId = user?.id {
+                ChildrenProfileSection(
+                    viewModel: childrenViewModel,
+                    currentUserId: userId,
+                    allUsers: lunchViewModel.days.first?.allUsers ?? []
+                )
             }
         }
     }

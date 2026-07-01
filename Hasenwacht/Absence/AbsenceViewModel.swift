@@ -43,6 +43,10 @@ final class AbsenceViewModel: ObservableObject {
                 self?.isLoading = false
                 LunchDaysViewModel.shared.onAbsenceChanged()
             }
+            // Beim ersten Laden: fehlende Opt-Out Attendances für wiederkehrende Wochentage nachschreiben
+            Task { [weak self] in
+                await self?.repairMissingRecurringAttendances(absence: absence)
+            }
         }
 
         vacationListener = AbsenceService.shared.observeVacations(userId: userId) { [weak self] vacations in
@@ -101,6 +105,42 @@ final class AbsenceViewModel: ObservableObject {
         vacationListener = nil
         userId = ""
         hasRepaired = false
+        hasRepairedRecurring = false
+    }
+
+    /// Repariert fehlende Opt-Out Attendances für wiederkehrende Absenzen.
+    /// Läuft einmal pro Session — schreibt für alle zukünftigen Occurrences
+    /// der abgespeicherten Wochentage ein Opt-Out Attendance-Dokument.
+    private var hasRepairedRecurring = false
+    private func repairMissingRecurringAttendances(absence: RecurringAbsence) async {
+        guard !hasRepairedRecurring, !userId.isEmpty else { return }
+        guard !absence.absentWeekdays.isEmpty else { return }
+        hasRepairedRecurring = true
+
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let today = cal.startOfDay(for: Date())
+
+        // Alle zukünftigen Werktage im Fenster sammeln die einem abwesenden Wochentag entsprechen
+        let allWorkdays = LunchDaysViewModel.nextWorkdays()
+        let datesToOptOut = allWorkdays.filter { date in
+            guard cal.startOfDay(for: date) >= today else { return false }
+            let appleWeekday = cal.component(.weekday, from: date)
+            let iso = appleWeekday == 1 ? 7 : appleWeekday - 1
+            return absence.absentWeekdays.contains(iso)
+        }
+
+        guard !datesToOptOut.isEmpty else { return }
+
+        do {
+            try await AttendanceService.shared.batchSetAttendances(
+                userId: userId,
+                dates: datesToOptOut,
+                isAttending: false
+            )
+        } catch {
+            // Stille Reparatur
+        }
     }
 
     // MARK: - Recurring

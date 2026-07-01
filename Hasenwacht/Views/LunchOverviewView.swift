@@ -270,6 +270,8 @@ private struct DayCard: View {
         Group {
             if day.hasNoData {
                 NoDataCard(day: day)
+            } else if day.isCancelled {
+                CancelledCard(day: day)
             } else if day.isPast || isTodayOver {
                 PastCard(day: day)
             } else if day.isToday {
@@ -280,6 +282,51 @@ private struct DayCard: View {
                 UpcomingCard(day: day, showCutoffBanner: showCutoffBanner, onToggle: onToggle)
             }
         }
+    }
+}
+
+// MARK: - Abgesagte Karte (User hat den Tag gestrichen)
+
+private struct CancelledCard: View {
+    let day: DayViewModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            DateBlock(day: day, variant: .past)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(day.date.weekdayNameLong)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(DS.Colors.textTertiary)
+                    .strikethrough()
+                HStack(spacing: 5) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DS.Colors.danger)
+                    Text("Kein Mittagessen")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(DS.Colors.danger)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Text("ABGESAGT")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(DS.Colors.danger)
+                .tracking(0.8)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(DS.Colors.dangerSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(16)
+        .background(DS.Colors.dangerSurface.opacity(0.4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(DS.Colors.danger.opacity(0.25), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .opacity(0.75)
     }
 }
 
@@ -336,14 +383,14 @@ private struct NoDataCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(day.date.weekdayNameLong)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color(UIColor.tertiaryLabel))
+                    .foregroundStyle(DS.Colors.textSecondary)
                 HStack(spacing: 4) {
                     Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
                         .font(.system(size: 10))
-                        .foregroundStyle(Color(UIColor.quaternaryLabel))
+                        .foregroundStyle(DS.Colors.textTertiary)
                     Text("Vor App-Installation")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color(UIColor.quaternaryLabel))
+                        .foregroundStyle(DS.Colors.textTertiary)
                 }
             }
 
@@ -456,15 +503,15 @@ private struct PastCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(day.date.weekdayNameLong)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color(UIColor.tertiaryLabel))
+                    .foregroundStyle(DS.Colors.textSecondary)
 
                 HStack(spacing: 4) {
                     Image(systemName: day.currentUserAttending ? "checkmark" : "xmark")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color(UIColor.quaternaryLabel))
+                        .foregroundStyle(DS.Colors.textTertiary)
                     Text(day.currentUserAttending ? "Teilgenommen" : "Abgemeldet")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color(UIColor.quaternaryLabel))
+                        .foregroundStyle(DS.Colors.textTertiary)
                 }
             }
 
@@ -472,7 +519,7 @@ private struct PastCard: View {
 
             Text("VORBEI")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color(UIColor.tertiaryLabel))
+                .foregroundStyle(DS.Colors.textTertiary)
                 .tracking(0.5)
         }
         .padding(16)

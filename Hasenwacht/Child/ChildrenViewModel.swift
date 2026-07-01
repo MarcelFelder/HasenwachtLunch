@@ -32,7 +32,6 @@ final class ChildrenViewModel: ObservableObject {
                 LunchDaysViewModel.shared.onChildrenChanged()
             }
         }
-        // Overrides für gesamtes Fenster
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
         let startWindow = LunchDaysViewModel.earliestMonday()
@@ -70,18 +69,15 @@ final class ChildrenViewModel: ObservableObject {
                       on date: Date,
                       attendingUserIds: Set<String>) -> String? {
         let cal = Calendar.current
-        // Override prüfen
         if let override = overrides.first(where: {
             $0.childId == child.id && cal.isDate($0.date, inSameDayAs: date)
         }) {
-            // Override existiert — entweder takingParentId oder nil (abgemeldet)
             if let takerId = override.takingParentId,
                attendingUserIds.contains(takerId) {
                 return takerId
             }
             return nil
         }
-        // Default: primary parent muss dabei sein
         return attendingUserIds.contains(child.primaryParentId)
             ? child.primaryParentId
             : nil
@@ -96,7 +92,6 @@ final class ChildrenViewModel: ObservableObject {
         }
     }
 
-    /// Hat das Kind heute einen expliziten Override?
     func override(for childId: String, on date: Date) -> ChildAttendanceOverride? {
         let cal = Calendar.current
         return overrides.first { $0.childId == childId && cal.isDate($0.date, inSameDayAs: date) }
@@ -104,14 +99,12 @@ final class ChildrenViewModel: ObservableObject {
 
     // MARK: - Actions
 
-    /// Setzt einen Override (z.B. "Marcel nimmt Lia heute mit" oder "Lia kommt heute nicht").
     func setOverride(childId: String, date: Date, takingParentId: String?) async {
         try? await ChildService.shared.setOverride(
             childId: childId, date: date, takingParentId: takingParentId
         )
     }
 
-    /// Entfernt den Override → zurück zum Default-Verhalten.
     func clearOverride(childId: String, date: Date) async {
         try? await ChildService.shared.deleteOverride(childId: childId, date: date)
     }
