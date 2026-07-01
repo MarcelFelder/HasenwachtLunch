@@ -50,14 +50,11 @@ final class LunchDaysViewModel: ObservableObject {
         calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
 
         let installDate = OnboardingService.shared.firstAppUseDate
-        let twoWeeksAgo = calendar.date(byAdding: .weekOfYear, value: -2, to: Date()) ?? Date()
-        // Nimm das spätere Datum (max 2 Wochen zurück oder Installationsdatum)
-        let fromDate = installDate < twoWeeksAgo ? twoWeeksAgo : installDate
 
-        // Finde den Montag dieser Woche
-        let weekday = calendar.component(.weekday, from: fromDate)
+        // Finde den Montag der Installationswoche
+        let weekday = calendar.component(.weekday, from: installDate)
         let daysSinceMonday = weekday == 1 ? 6 : weekday - 2
-        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: fromDate) ?? fromDate
+        let monday = calendar.date(byAdding: .day, value: -daysSinceMonday, to: installDate) ?? installDate
         return calendar.date(bySettingHour: 12, minute: 0, second: 0, of: monday) ?? monday
     }
 

@@ -96,6 +96,23 @@ final class StatsViewModel: ObservableObject {
                     try? $0.data(as: CookingSlot.self)
                 }
 
+                // Recurring Absences laden für direkte Auswertung
+                let recurringSnapshot = try await db.collection("recurringAbsences").getDocuments()
+                var recurringMap: [String: [Int]] = [:]
+                for doc in recurringSnapshot.documents {
+                    if let absence = try? doc.data(as: RecurringAbsence.self) {
+                        recurringMap[doc.documentID] = absence.absentWeekdays
+                    }
+                }
+
+                // Vacation Absences laden
+                let vacationSnapshot = try await db.collection("vacationAbsences")
+                    .whereField("endDate", isGreaterThanOrEqualTo: start)
+                    .getDocuments()
+                let vacations = vacationSnapshot.documents.compactMap {
+                    try? $0.data(as: VacationAbsence.self)
+                }
+
                 // Werktage im Zeitraum berechnen
                 let workdays = workdaysInRange(from: start, to: end)
 
@@ -103,7 +120,9 @@ final class StatsViewModel: ObservableObject {
                     self.userStats = self.buildStats(
                         attendances: attendances,
                         slots: slots,
-                        workdays: workdays
+                        workdays: workdays,
+                        recurringAbsences: recurringMap,
+                        vacations: vacations
                     )
                     self.isLoading = false
                 }
@@ -118,27 +137,63 @@ final class StatsViewModel: ObservableObject {
 
     private func buildStats(attendances: [Attendance],
                             slots: [CookingSlot],
-                            workdays: [Date]) -> [UserStats] {
-        let calendar = Calendar.current
-        let pastWorkdays = workdays.filter { $0 <= Date() }
-        let total = pastWorkdays.count
+                            workdays: [Date],
+                            recurringAbsences: [String: [Int]],
+                            vacations: [VacationAbsence]) -> [UserStats] {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let now = Date()
 
         return allUsers.compactMap { user -> UserStats? in
             guard let userId = user.id else { return nil }
 
-            // Opt-Out Dokumente für diesen User
-            let optedOutDates = Set(
+            let userStart: Date = {
+                let c = cal.dateComponents([.year, .month, .day], from: user.createdAt)
+                return cal.date(from: c) ?? user.createdAt
+            }()
+            let relevantWorkdays = workdays.filter { cal.startOfDay(for: $0) >= userStart && $0 <= now }
+
+            let total = relevantWorkdays.count
+            guard total > 0 else { return nil }
+
+            // Explizite Opt-Outs / Opt-Ins
+            let explicitOptOuts = Set(
                 attendances
                     .filter { $0.userId == userId && !$0.isAttending }
-                    .map { calendar.startOfDay(for: $0.date) }
+                    .map { cal.startOfDay(for: $0.date) }
+            )
+            let explicitOptIns = Set(
+                attendances
+                    .filter { $0.userId == userId && $0.isAttending }
+                    .map { cal.startOfDay(for: $0.date) }
             )
 
-            // Anwesend = alle Werktage minus opt-outs
-            let attended = pastWorkdays.filter { day in
-                !optedOutDates.contains(calendar.startOfDay(for: day))
+            // Wiederkehrende Absenz-Wochentage
+            let recurringWeekdays = recurringAbsences[userId] ?? []
+
+            // Ferien dieses Users
+            let userVacations = vacations.filter { $0.userId == userId }
+
+            let attended = relevantWorkdays.filter { day in
+                let dayStart = cal.startOfDay(for: day)
+
+                // Explizit abgemeldet
+                if explicitOptOuts.contains(dayStart) { return false }
+
+                // Explizit angemeldet → überschreibt alles
+                if explicitOptIns.contains(dayStart) { return true }
+
+                // Ferien prüfen
+                if userVacations.contains(where: { $0.covers(date: day) }) { return false }
+
+                // Wiederkehrende Absenz prüfen
+                let appleWeekday = cal.component(.weekday, from: day)
+                let isoWeekday = appleWeekday == 1 ? 7 : appleWeekday - 1
+                if recurringWeekdays.contains(isoWeekday) { return false }
+
+                return true
             }.count
 
-            // Gekocht
             let cooked = slots.filter { $0.userId == userId }.count
 
             return UserStats(
@@ -157,23 +212,29 @@ final class StatsViewModel: ObservableObject {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
         let now = Date()
-        let today = cal.startOfDay(for: now)
-        // Frühestes Datum = firstAppUseDate (User hatte die App noch nicht davor)
-        let installDate = cal.startOfDay(for: OnboardingService.shared.firstAppUseDate)
+        // today = Beginn des heutigen Tages in Zürich-Zeit, dann als UTC
+        let todayComponents = cal.dateComponents([.year, .month, .day], from: now)
+        let today = cal.date(from: todayComponents) ?? now
+
+        let installDate: Date = {
+            let d = OnboardingService.shared.firstAppUseDate
+            let c = cal.dateComponents([.year, .month, .day], from: d)
+            return cal.date(from: c) ?? d
+        }()
 
         switch period {
         case .week:
             let weekday = cal.component(.weekday, from: now)
             let daysSinceMonday = weekday == 1 ? 6 : weekday - 2
-            let monday = cal.date(byAdding: .day, value: -daysSinceMonday, to: now) ?? now
-            let start = max(cal.startOfDay(for: monday), installDate)
-            let end = min(cal.date(byAdding: .day, value: 4, to: monday) ?? now, today)
+            let monday = cal.date(byAdding: .day, value: -daysSinceMonday, to: today) ?? today
+            let start = max(monday, installDate)
+            let end = today
             return (start, end)
 
         case .month:
             let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
-            let start = max(cal.startOfDay(for: monthStart), installDate)
-            let end = today // nie in die Zukunft
+            let start = max(monthStart, installDate)
+            let end = today
             return (start, end)
 
         case .total:
@@ -184,13 +245,10 @@ final class StatsViewModel: ObservableObject {
     private func workdaysInRange(from start: Date, to end: Date) -> [Date] {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
-        let today = cal.startOfDay(for: Date())
-        // Nie über heute hinaus zählen
-        let effectiveEnd = min(cal.startOfDay(for: end), today)
         var result: [Date] = []
-        var current = cal.startOfDay(for: start)
+        var current = start
 
-        while current <= effectiveEnd {
+        while current <= end {
             let weekday = cal.component(.weekday, from: current)
             if weekday >= 2 && weekday <= 6 { result.append(current) }
             current = cal.date(byAdding: .day, value: 1, to: current) ?? current

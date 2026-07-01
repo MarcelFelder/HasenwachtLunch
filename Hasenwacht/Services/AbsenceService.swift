@@ -63,11 +63,7 @@ final class AbsenceService {
                           onChange: @escaping ([VacationAbsence]) -> Void) -> ListenerRegistration {
         vacationCollection
             .whereField("userId", isEqualTo: userId)
-            .addSnapshotListener { snapshot, error in
-                if let error {
-                    onChange([])
-                    return
-                }
+            .addSnapshotListener { snapshot, _ in
                 guard let docs = snapshot?.documents else { onChange([]); return }
                 let vacations = docs
                     .compactMap { try? $0.data(as: VacationAbsence.self) }
