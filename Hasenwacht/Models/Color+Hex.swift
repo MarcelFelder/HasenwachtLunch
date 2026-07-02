@@ -17,4 +17,11 @@ extension Color {
         let b = Double(int & 0xFF) / 255.0
         self.init(red: r, green: g, blue: b)
     }
+
+    /// Erzeugt eine Farbe, die sich automatisch an Light/Dark Mode anpasst.
+    init(lightHex: String, darkHex: String) {
+        self.init(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark ? UIColor(Color(hex: darkHex)) : UIColor(Color(hex: lightHex))
+        })
+    }
 }

@@ -100,7 +100,7 @@ struct LunchOverviewView: View {
                         .foregroundStyle(.white)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(DS.Colors.textPrimary.opacity(0.88))
+                .background(Color(hex: "2C2C2A").opacity(0.88))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .padding(.bottom, 24)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
