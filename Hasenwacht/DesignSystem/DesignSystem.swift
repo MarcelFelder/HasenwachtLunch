@@ -16,34 +16,34 @@ enum DS {
 
     enum Colors {
         /// Hausfarbe: warmes Coral – passt zum Mittagessen-Thema
-        static let primary = Color(hex: "D85A30")
-        static let primaryDark = Color(hex: "993C1D")
+        static let primary = Color(lightHex: "D85A30", darkHex: "E97A50")
+        static let primaryDark = Color(lightHex: "993C1D", darkHex: "E8A488")
         static let primaryLight = Color(hex: "F5C4B3")
-        static let primarySurface = Color(hex: "FAECE7")
+        static let primarySurface = Color(lightHex: "FAECE7", darkHex: "3D2A21")
 
         /// Status-Farben (Eintragung dabei / nicht dabei)
-        static let success = Color(hex: "1D9E75")
-        static let successSurface = Color(hex: "E1F5EE")
-        static let danger = Color(hex: "B33A3A")
-        static let dangerSurface = Color(hex: "FCEBEB")
+        static let success = Color(lightHex: "1D9E75", darkHex: "3DC495")
+        static let successSurface = Color(lightHex: "E1F5EE", darkHex: "12332A")
+        static let danger = Color(lightHex: "B33A3A", darkHex: "E06060")
+        static let dangerSurface = Color(lightHex: "FCEBEB", darkHex: "3A1E1E")
 
         /// Akzent für Feiertage / Hinweise
-        static let warning = Color(hex: "BA7517")
-        static let warningSurface = Color(hex: "FAEEDA")
+        static let warning = Color(lightHex: "BA7517", darkHex: "D89A3D")
+        static let warningSurface = Color(lightHex: "FAEEDA", darkHex: "3A2E17")
 
         /// Feature-Farben
         static let cookingPurple  = Color(red: 0.45, green: 0.30, blue: 0.80)
         static let absenceBlue    = Color(red: 0.33, green: 0.45, blue: 0.80)
         static let absenceAmber   = Color(red: 0.80, green: 0.50, blue: 0.15)
 
-        /// Neutralfarben
-        static let background = Color(hex: "FFFFFF")
-        static let surface = Color(hex: "F5F3EE")
-        static let surfaceAlt = Color(hex: "EBE6DD")
-        static let textPrimary = Color(hex: "2C2C2A")
-        static let textSecondary = Color(hex: "5F5E5A")
-        static let textTertiary = Color(hex: "888780")
-        static let border = Color(hex: "E0DAD3")
+        /// Neutralfarben — passen sich automatisch an Light/Dark Mode an
+        static let background = Color(lightHex: "FFFFFF", darkHex: "1E1E20")
+        static let surface = Color(lightHex: "F5F3EE", darkHex: "121214")
+        static let surfaceAlt = Color(lightHex: "EBE6DD", darkHex: "000000")
+        static let textPrimary = Color(lightHex: "2C2C2A", darkHex: "F2F1ED")
+        static let textSecondary = Color(lightHex: "5F5E5A", darkHex: "A6A49E")
+        static let textTertiary = Color(lightHex: "888780", darkHex: "76746E")
+        static let border = Color(lightHex: "E0DAD3", darkHex: "3A3A3C")
     }
 
     // MARK: - Schriftgrössen
