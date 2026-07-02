@@ -37,9 +37,13 @@ struct ChildAttendanceOverride: Codable, Identifiable, Hashable {
 
     /// Dokument-ID: {childId}_{yyyy-MM-dd}
     static func documentId(childId: String, date: Date) -> String {
+        "\(childId)_\(Self.dayFormatter.string(from: date))"
+    }
+
+    private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(identifier: "Europe/Zurich")
-        return "\(childId)_\(formatter.string(from: date))"
-    }
+        return formatter
+    }()
 }

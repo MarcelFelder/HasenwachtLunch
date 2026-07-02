@@ -47,17 +47,25 @@ struct VacationAbsence: Identifiable, Codable {
 
     /// Formatierter Datumsbereich für die UI.
     var dateRangeLabel: String {
+        let startYear = Self.yearFormatter.string(from: startDate)
+        let endYear = Self.yearFormatter.string(from: endDate)
+        if startYear == endYear {
+            return "\(Self.dayMonthFormatter.string(from: startDate)) – \(Self.dayMonthFormatter.string(from: endDate)) \(endYear)"
+        }
+        return "\(Self.dayMonthFormatter.string(from: startDate)) \(startYear) – \(Self.dayMonthFormatter.string(from: endDate)) \(endYear)"
+    }
+
+    private static let dayMonthFormatter: DateFormatter = {
         let df = DateFormatter()
         df.locale = Locale(identifier: "de_CH")
         df.dateFormat = "d. MMM"
         df.timeZone = TimeZone(identifier: "Europe/Zurich")
-        let yearFormatter = DateFormatter()
-        yearFormatter.dateFormat = "yyyy"
-        let startYear = yearFormatter.string(from: startDate)
-        let endYear = yearFormatter.string(from: endDate)
-        if startYear == endYear {
-            return "\(df.string(from: startDate)) – \(df.string(from: endDate)) \(endYear)"
-        }
-        return "\(df.string(from: startDate)) \(startYear) – \(df.string(from: endDate)) \(endYear)"
-    }
+        return df
+    }()
+
+    private static let yearFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy"
+        return df
+    }()
 }

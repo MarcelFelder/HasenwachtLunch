@@ -26,7 +26,7 @@ final class CookingViewModel: ObservableObject {
         listener?.remove()
         isLoading = true
 
-        let dates = LunchDaysViewModel.nextWorkdays(count: 200)
+        let dates = LunchDaysViewModel.nextWorkdays()
         guard let first = dates.first, let last = dates.last else { return }
 
         listener = CookingService.shared.observeSlots(from: first, to: last) { [weak self] slots in

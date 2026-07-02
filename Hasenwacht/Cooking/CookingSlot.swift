@@ -33,11 +33,15 @@ struct CookingSlot: Identifiable, Codable {
 
     /// Datum als Dokument-ID → max. 1 Koch pro Tag
     static func documentId(for date: Date) -> String {
+        Self.dayFormatter.string(from: date)
+    }
+
+    private static let dayFormatter: DateFormatter = {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         df.timeZone = TimeZone(identifier: "Europe/Zurich")
-        return df.string(from: date)
-    }
+        return df
+    }()
 
     var hasMenu: Bool {
         menuTitle?.isEmpty == false || menuDescription?.isEmpty == false
