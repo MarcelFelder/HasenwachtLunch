@@ -94,8 +94,10 @@ final class NotificationService {
             .filter { $0.hasPrefix(Self.reminderIdentifierPrefix) }
         center.removePendingNotificationRequests(withIdentifiers: oldIdentifiers)
 
-        // 2. Wenn deaktiviert oder keine Permission → fertig
-        guard remindersEnabled, authorizationStatus == .authorized else {
+        // 2. Wenn deaktiviert, keine Permission oder kein User angemeldet → fertig.
+        //    Reminder sollen nur an Tagen aktiv sein, an denen der User angemeldet ist;
+        //    nach einem bewussten Logout soll keine Nachfrage-Push mehr kommen.
+        guard remindersEnabled, authorizationStatus == .authorized, AuthService.shared.currentUserId != nil else {
             return
         }
 
