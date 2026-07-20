@@ -360,6 +360,9 @@ final class LunchDaysViewModel: ObservableObject {
                 date: date,
                 isAttending: !isCurrentlyAttending
             )
+            // Reminder neu planen, damit eine bereits eingeplante Push für diesen
+            // Tag entfällt, falls der User sich soeben ausgetragen hat (und umgekehrt).
+            await NotificationService.shared.rescheduleReminders()
         } catch {
             await MainActor.run {
                 errorMessage = "Status konnte nicht aktualisiert werden: \(error.localizedDescription)"

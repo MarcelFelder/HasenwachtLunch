@@ -98,6 +98,9 @@ struct RootView: View {
                     // (kein Warten mehr auf extern geladene Userliste nötig).
                     TeamAbsenceViewModel.shared.start()
                 }
+                // Reminder erst nach erfolgreichem Login (neu) planen, nicht schon beim
+                // App-Start ohne Anmeldung.
+                await NotificationService.shared.rescheduleReminders()
             }
         } else {
             LunchDaysViewModel.shared.stop()
