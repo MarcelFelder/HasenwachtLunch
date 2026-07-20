@@ -174,6 +174,8 @@ final class AbsenceViewModel: ObservableObject {
                 // Absenz gesetzt → für alle betroffenen bookable Tage als abgemeldet schreiben
                 try await AttendanceService.shared.batchSetAttendances(userId: userId, dates: affectedDates, isAttending: false)
             }
+            // Reminder neu planen, da sich der Anmeldestatus für kommende Tage geändert hat.
+            await NotificationService.shared.rescheduleReminders()
         } catch {
             // Rollback bei Fehler
             await MainActor.run {
@@ -216,6 +218,8 @@ final class AbsenceViewModel: ObservableObject {
                     userId: userId, dates: affected, isAttending: false
                 )
             }
+            // Reminder neu planen, da sich der Anmeldestatus für die Ferientage geändert hat.
+            await NotificationService.shared.rescheduleReminders()
         } catch {
             await MainActor.run { self.errorMessage = "Ferien konnten nicht gespeichert werden: \(error.localizedDescription)" }
         }
@@ -235,6 +239,8 @@ final class AbsenceViewModel: ObservableObject {
             if !affected.isEmpty {
                 try await AttendanceService.shared.batchDeleteAttendances(userId: userId, dates: affected)
             }
+            // Reminder neu planen, da sich der Anmeldestatus für die Ferientage geändert hat.
+            await NotificationService.shared.rescheduleReminders()
         } catch {
             await MainActor.run { self.errorMessage = "Löschen fehlgeschlagen." }
         }

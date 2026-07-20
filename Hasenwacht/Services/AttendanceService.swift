@@ -78,6 +78,18 @@ final class AttendanceService {
         try await batch.commit()
     }
 
+    // MARK: - Einzelabfrage
+
+    /// Lädt den Anwesenheitsstatus eines Users für einen Tag einmalig (kein Listener).
+    /// Gibt nil zurück, wenn kein explizites Dokument existiert — dann gilt der
+    /// Default (angemeldet), siehe Kommentar oben.
+    func fetchAttendance(userId: String, date: Date) async throws -> Attendance? {
+        let documentId = Attendance.documentId(userId: userId, date: date)
+        let doc = try await attendancesCollection.document(documentId).getDocument()
+        guard doc.exists else { return nil }
+        return try? doc.data(as: Attendance.self)
+    }
+
     // MARK: - Listener für einen Datumsbereich
 
     /// Hört auf Änderungen aller Attendance-Dokumente innerhalb des Datumsbereichs.

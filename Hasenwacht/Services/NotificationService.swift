@@ -95,18 +95,26 @@ final class NotificationService {
         center.removePendingNotificationRequests(withIdentifiers: oldIdentifiers)
 
         // 2. Wenn deaktiviert, keine Permission oder kein User angemeldet → fertig.
-        //    Reminder sollen nur an Tagen aktiv sein, an denen der User angemeldet ist;
-        //    nach einem bewussten Logout soll keine Nachfrage-Push mehr kommen.
-        guard remindersEnabled, authorizationStatus == .authorized, AuthService.shared.currentUserId != nil else {
+        guard remindersEnabled, authorizationStatus == .authorized,
+              let userId = AuthService.shared.currentUserId else {
             return
         }
 
-        // 3. Reminder planen:
+        // 3. Wiederkehrende Absenz einmalig laden — dient als Fallback, falls für
+        //    einen abwesenden Wochentag (noch) kein explizites Attendance-Dokument
+        //    existiert (siehe AbsenceViewModel.repairMissingRecurringAttendances).
+        let recurringAbsence = (try? await AbsenceService.shared.fetchRecurring(userId: userId)) ?? RecurringAbsence()
+
+        // 4. Reminder planen:
         //    Reminder läuft um 10:00, wenn der FOLGETAG ein Werktag (Mo–Fr) ist
         //    und kein Feiertag.
         //    Daraus ergibt sich automatisch:
         //    - Reminder So–Do → Mittagessen Mo–Fr
         //    - Kein Reminder Fr (Folgetag = Sa) und Sa (Folgetag = So)
+        //    Zusätzlich wird der Reminder nur geplant, wenn der User für den
+        //    Folgetag aktuell angemeldet ist — wer sich bewusst abgemeldet hat
+        //    (explizit oder via wiederkehrender Absenz/Ferien), bekommt keine
+        //    Nachfrage-Push mehr.
         let calendar = Calendar.current
         let now = Date()
         var scheduledCount = 0
@@ -142,9 +150,24 @@ final class NotificationService {
                 continue
             }
 
+            // User muss für den Folgetag angemeldet sein, sonst keine Push nötig
+            guard await isUserAttending(userId: userId, on: targetDay, recurringAbsence: recurringAbsence) else {
+                continue
+            }
+
             await scheduleReminder(for: triggerDate, dayAfter: targetDay)
             scheduledCount += 1
         }
+    }
+
+    /// Prüft, ob der User für den gegebenen Tag aktuell angemeldet ist.
+    /// Ein explizites Attendance-Dokument hat immer Vorrang; existiert keins,
+    /// entscheidet die wiederkehrende Absenz; ansonsten gilt der Default (angemeldet).
+    private func isUserAttending(userId: String, on date: Date, recurringAbsence: RecurringAbsence) async -> Bool {
+        if let attendance = try? await AttendanceService.shared.fetchAttendance(userId: userId, date: date) {
+            return attendance.isAttending
+        }
+        return !recurringAbsence.isAbsent(on: date)
     }
 
     private func scheduleReminder(for triggerDate: Date, dayAfter: Date) async {
