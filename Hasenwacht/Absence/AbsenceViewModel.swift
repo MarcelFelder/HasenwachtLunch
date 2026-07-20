@@ -188,7 +188,7 @@ final class AbsenceViewModel: ObservableObject {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
         let today = calendar.startOfDay(for: Date())
-        return LunchDaysViewModel.nextWorkdays(count: 200).filter { date in
+        return LunchDaysViewModel.nextWorkdays().filter { date in
             // Nur ab heute (vergangene Tage nicht überschreiben)
             guard calendar.startOfDay(for: date) >= today else { return false }
             // ISO-Wochentag prüfen

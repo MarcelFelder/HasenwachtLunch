@@ -12,7 +12,6 @@ struct AbsenceView: View {
     @Environment(CurrentUserService.self) private var currentUserService
     @StateObject private var viewModel = AbsenceViewModel.shared
     @StateObject private var teamViewModel = TeamAbsenceViewModel.shared
-    @StateObject private var lunchViewModel = LunchDaysViewModel.shared
     @State private var showAddVacation = false
     @State private var showTeamOverview = false
 
@@ -45,10 +44,11 @@ struct AbsenceView: View {
             }
             .navigationBarHidden(true)
             .onAppear {
+                // TeamAbsenceViewModel läuft bereits zentral seit dem Login
+                // (siehe HasenwachtApp.handleAuthChange) — hier nur AbsenceViewModel
+                // idempotent sicherstellen (guard verhindert Doppel-Start).
                 if let userId = currentUserService.currentUser?.id {
                     viewModel.start(userId: userId)
-                    let users = lunchViewModel.days.first?.allUsers ?? []
-                    teamViewModel.start(users: users)
                 }
             }
             .sheet(isPresented: $showAddVacation) {

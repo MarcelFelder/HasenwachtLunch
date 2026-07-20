@@ -51,11 +51,7 @@ enum AbsenceReason {
     var label: String {
         switch self {
         case .vacation(let v):
-            let df = DateFormatter()
-            df.locale = Locale(identifier: "de_CH")
-            df.dateFormat = "d. MMM"
-            df.timeZone = TimeZone(identifier: "Europe/Zurich")
-            return "Ferien bis \(df.string(from: v.endDate))"
+            return "Ferien bis \(Self.vacationEndFormatter.string(from: v.endDate))"
         case .recurring(let iso):
             let days = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag"]
             return "Jeden \(days[iso - 1])"
@@ -66,6 +62,16 @@ enum AbsenceReason {
         if case .vacation = self { return true }
         return false
     }
+
+    /// Gecacht statt pro Aufruf neu erzeugt — DateFormatter-Instanzierung ist teuer
+    /// und `label` wird pro sichtbarer Zeile in der Abgemeldet-Liste aufgerufen.
+    private static let vacationEndFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "de_CH")
+        df.dateFormat = "d. MMM"
+        df.timeZone = TimeZone(identifier: "Europe/Zurich")
+        return df
+    }()
 }
 
 final class TeamAbsenceViewModel: ObservableObject {
@@ -84,17 +90,22 @@ final class TeamAbsenceViewModel: ObservableObject {
 
     private init() {}
 
-    func start(users: [User]) {
-        guard !users.isEmpty else { return }
-        allUsers = users
+    /// Startet alle drei Listener (User, Ferien, wiederkehrende Absenzen) reaktiv.
+    /// Braucht keine extern geladene Userliste mehr — beobachtet die
+    /// "users"-Collection selbst, genau wie LunchDaysViewModel.
+    func start() {
         isLoading = true
         stopListeners()
+        startUsersListener()
         startVacationsListener()
-        startRecurringListeners(for: users)
+        startRecurringListener()
     }
 
     func stop() {
         stopListeners()
+        allUsers = []
+        allVacations = []
+        recurringMap = [:]
         teamAbsences = []
         isLoading = true
     }
@@ -105,6 +116,15 @@ final class TeamAbsenceViewModel: ObservableObject {
     }
 
     // MARK: - Listeners
+
+    private func startUsersListener() {
+        let l = UserService.shared.observeAllUsers { [weak self] users in
+            guard let self else { return }
+            self.allUsers = users
+            self.rebuild()
+        }
+        listeners.append(l)
+    }
 
     private func startVacationsListener() {
         let l = db.collection("vacationAbsences")
@@ -118,21 +138,24 @@ final class TeamAbsenceViewModel: ObservableObject {
         listeners.append(l)
     }
 
-    private func startRecurringListeners(for users: [User]) {
-        for user in users {
-            guard let userId = user.id else { continue }
-            let l = db.collection("recurringAbsences").document(userId)
-                .addSnapshotListener { [weak self] snapshot, _ in
-                    guard let self else { return }
-                    if let absence = try? snapshot?.data(as: RecurringAbsence.self) {
-                        self.recurringMap[userId] = absence.absentWeekdays
-                    } else {
-                        self.recurringMap[userId] = []
+    /// EIN Listener auf die gesamte Collection statt einem Listener pro User —
+    /// deckt exakt dieselben Daten ab, die LunchDaysViewModel bereits separat
+    /// abonniert, aber ohne für jeden Team-Mitglied einen eigenen offenen
+    /// Firestore-Listener zu benötigen.
+    private func startRecurringListener() {
+        let l = db.collection("recurringAbsences")
+            .addSnapshotListener { [weak self] snapshot, _ in
+                guard let self else { return }
+                var map: [String: [Int]] = [:]
+                for doc in snapshot?.documents ?? [] {
+                    if let absence = try? doc.data(as: RecurringAbsence.self) {
+                        map[doc.documentID] = absence.absentWeekdays
                     }
-                    self.rebuild()
                 }
-            listeners.append(l)
-        }
+                self.recurringMap = map
+                self.rebuild()
+            }
+        listeners.append(l)
     }
 
     // MARK: - Rebuild
@@ -172,9 +195,13 @@ final class TeamAbsenceViewModel: ObservableObject {
         let dates = currentWeekDates
         guard let first = dates.first, let last = dates.last else { return "" }
         let cal = Calendar.current
+        return "\(cal.component(.day, from: first)). – \(cal.component(.day, from: last)). \(Self.monthFormatter.string(from: last))"
+    }
+
+    private static let monthFormatter: DateFormatter = {
         let df = DateFormatter()
         df.locale = Locale(identifier: "de_CH")
         df.dateFormat = "MMMM"
-        return "\(cal.component(.day, from: first)). – \(cal.component(.day, from: last)). \(df.string(from: last))"
-    }
+        return df
+    }()
 }

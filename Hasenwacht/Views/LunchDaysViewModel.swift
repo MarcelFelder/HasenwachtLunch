@@ -159,7 +159,7 @@ final class LunchDaysViewModel: ObservableObject {
     }
 
     private func startAttendancesListener() {
-        let workdays = Self.nextWorkdays(count: 200)
+        let workdays = Self.nextWorkdays()
         guard let firstDate = workdays.first,
               let lastDate = workdays.last else { return }
 
@@ -177,7 +177,7 @@ final class LunchDaysViewModel: ObservableObject {
     }
     
     private func startLunchDaysListener() {
-        let workdays = Self.nextWorkdays(count: 200)
+        let workdays = Self.nextWorkdays()
         guard let firstDate = workdays.first,
               let lastDate = workdays.last else { return }
 
@@ -249,7 +249,7 @@ final class LunchDaysViewModel: ObservableObject {
 
     /// Baut die DayViewModels aus den aktuellen User- und Attendance-Daten neu auf.
     private func rebuildDays() {
-        let workdays = Self.nextWorkdays(count: 200)
+        let workdays = Self.nextWorkdays()
         var newDays = workdays.map { date in
             buildDayViewModel(for: date)
         }
@@ -422,7 +422,15 @@ final class LunchDaysViewModel: ObservableObject {
     // MARK: - Datum-Helper
 
     /// Erzeugt alle Werktage im gesamten Fenster (Installationsdatum bis +5 Wochen).
-    static func nextWorkdays(count: Int = 200) -> [Date] {
+    ///
+    /// Wichtig: Es gibt hier bewusst KEIN Zähl-Limit. Der Bereich ist durch
+    /// `futureEnd` bereits exakt begrenzt (aktuelle Woche + 10 Wochen Puffer).
+    /// Ein zusätzliches hartes Limit (z.B. "max. 300 Tage") ist gefährlich:
+    /// da `earliestMonday()` am Installationsdatum fixiert ist und `futureEnd`
+    /// mit der Zeit weiterwandert, würde ein solches Limit nach einigen Monaten
+    /// Nutzung erreicht, BEVOR die Schleife den heutigen Tag erreicht — die
+    /// App würde dann keine aktuellen/zukünftigen Tage mehr anzeigen.
+    static func nextWorkdays() -> [Date] {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
         var dates: [Date] = []
@@ -434,7 +442,7 @@ final class LunchDaysViewModel: ObservableObject {
             return []
         }
 
-        while current <= futureEnd && dates.count < 300 {
+        while current <= futureEnd {
             let weekday = calendar.component(.weekday, from: current)
             if weekday >= 2 && weekday <= 6 {
                 dates.append(current)

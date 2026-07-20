@@ -234,11 +234,15 @@ struct LunchOverviewView: View {
         let cal = Calendar.current
         let d1 = cal.component(.day, from: first)
         let d2 = cal.component(.day, from: last)
+        return "\(d1). – \(d2). \(Self.monthFormatter.string(from: last))"
+    }
+
+    private static let monthFormatter: DateFormatter = {
         let df = DateFormatter()
         df.locale = Locale(identifier: "de_CH")
         df.dateFormat = "MMMM"
-        return "\(d1). – \(d2). \(df.string(from: last))"
-    }
+        return df
+    }()
 
     private func errorView(message: String) -> some View {
         VStack(spacing: 12) {

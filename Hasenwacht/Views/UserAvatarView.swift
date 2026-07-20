@@ -17,11 +17,14 @@ struct UserAvatarView: View {
     var borderColor: Color = .clear
     var borderWidth: CGFloat = 0
 
+    private var decodedImage: UIImage? {
+        guard let base64 = user.photoBase64 else { return nil }
+        return Self.imageCache.image(for: base64)
+    }
+
     var body: some View {
         ZStack {
-            if let base64 = user.photoBase64,
-               let imageData = Data(base64Encoded: base64),
-               let uiImage = UIImage(data: imageData) {
+            if let uiImage = decodedImage {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
@@ -39,6 +42,25 @@ struct UserAvatarView: View {
         .overlay(
             Circle().stroke(borderColor, lineWidth: borderWidth)
         )
+    }
+
+    /// Dekodiert Base64 → UIImage nur einmal pro Foto und hält das Ergebnis vor.
+    /// Ohne Cache würde jeder Re-Render (z.B. durch die häufigen Firestore-
+    /// Listener-Updates in LunchDaysViewModel) für jeden sichtbaren Avatar
+    /// erneut Base64- und JPEG-Decoding durchführen.
+    private static let imageCache = AvatarImageCache()
+}
+
+private final class AvatarImageCache {
+    private let cache = NSCache<NSString, UIImage>()
+
+    func image(for base64: String) -> UIImage? {
+        let key = base64 as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+        guard let data = Data(base64Encoded: base64),
+              let image = UIImage(data: data) else { return nil }
+        cache.setObject(image, forKey: key)
+        return image
     }
 }
 

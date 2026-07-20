@@ -94,15 +94,9 @@ struct RootView: View {
                     AbsenceViewModel.shared.start(userId: userId)
                     CookingViewModel.shared.start(userId: userId)
                     ChildrenViewModel.shared.start()
-                }
-                // TeamAbsenceViewModel nach Users laden
-                let users = await withCheckedContinuation { cont in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        cont.resume(returning: LunchDaysViewModel.shared.days.first?.allUsers ?? [])
-                    }
-                }
-                await MainActor.run {
-                    TeamAbsenceViewModel.shared.start(users: users)
+                    // TeamAbsenceViewModel beobachtet User/Absenzen jetzt selbst reaktiv
+                    // (kein Warten mehr auf extern geladene Userliste nötig).
+                    TeamAbsenceViewModel.shared.start()
                 }
             }
         } else {
@@ -110,6 +104,7 @@ struct RootView: View {
             AbsenceViewModel.shared.stop()
             CookingViewModel.shared.stop()
             ChildrenViewModel.shared.stop()
+            TeamAbsenceViewModel.shared.stop()
             currentUserService.clear()
             NotificationService.shared.cancelAllReminders()
         }
