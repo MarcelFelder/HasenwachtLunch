@@ -10,6 +10,7 @@ import Foundation
 import AuthenticationServices
 import FirebaseAuth
 import CryptoKit
+import WidgetKit
 
 @Observable
 final class AuthService: NSObject {
@@ -54,7 +55,28 @@ final class AuthService: NSObject {
         _ = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             self?.currentUserId = user?.uid
             self?.didCheckInitialAuth = true
+            Self.syncSharedCredentials(user: user)
         }
+    }
+
+    /// Spiegelt den Refresh-Token in die App-Group-Keychain, damit die
+    /// Widget-Extension unabhängig von der App ein eigenes ID-Token beziehen kann.
+    /// `refreshToken` ist bewusst kein reguläres API — es ist der interne Token,
+    /// den auch das SDK selbst für die Token-Erneuerung nutzt.
+    private static func syncSharedCredentials(user: FirebaseAuth.User?) {
+        guard let user, let refreshToken = user.refreshToken, !refreshToken.isEmpty else {
+            SharedKeychain.clear()
+            SharedAttendanceCache.clear()
+            WidgetCenter.shared.reloadTimelines(ofKind: AppGroupConstants.widgetKind)
+            return
+        }
+        SharedKeychain.save(SharedKeychain.StoredCredentials(
+            userId: user.uid,
+            refreshToken: refreshToken,
+            cachedIdToken: nil,
+            cachedIdTokenExpiresAt: nil
+        ))
+        WidgetCenter.shared.reloadTimelines(ofKind: AppGroupConstants.widgetKind)
     }
 
     // MARK: - Login-Flow starten

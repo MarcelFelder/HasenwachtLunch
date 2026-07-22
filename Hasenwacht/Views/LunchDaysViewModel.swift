@@ -11,6 +11,7 @@ import Foundation
 import SwiftUI
 import FirebaseFirestore
 import Combine
+import WidgetKit
 
 final class LunchDaysViewModel: ObservableObject {
 
@@ -266,7 +267,35 @@ final class LunchDaysViewModel: ObservableObject {
         Task { @MainActor in
             self.days = newDays
             self.isLoading = false
+            self.pushWidgetCache(from: newDays)
         }
+    }
+
+    /// Spiegelt den Status des nächsten buchbaren Tages in den App-Group-Cache,
+    /// damit das Widget ohne eigenen Netzwerk-Roundtrip einen aktuellen Stand hat,
+    /// und stösst einen Timeline-Reload an — aber nur wenn sich wirklich etwas
+    /// geändert hat (sonst würde jeder Listener-Tick unnötig das Reload-Budget
+    /// des Widgets belasten).
+    private func pushWidgetCache(from days: [DayViewModel]) {
+        guard !currentUserId.isEmpty else { return }
+        let targetDate = LunchPhaseCalculator.nextBookableDate()
+        guard let day = days.first(where: { Calendar.current.isDate($0.date, inSameDayAs: targetDate) }) else { return }
+
+        let holidayName = (day.isHoliday && !day.lunchDay.forceLunch) ? day.holidayName : nil
+        let newCache = SharedAttendanceCache(
+            date: day.date,
+            isAttending: day.currentUserAttending,
+            phase: day.phase,
+            holidayName: holidayName,
+            isCancelled: day.isCancelled,
+            lastSyncedAt: Date(),
+            lastErrorMessage: nil
+        )
+
+        guard !newCache.hasSameDisplayState(as: SharedAttendanceCache.load()) else { return }
+
+        newCache.save()
+        WidgetCenter.shared.reloadTimelines(ofKind: AppGroupConstants.widgetKind)
     }
 
     private func buildDayViewModel(for date: Date) -> DayViewModel {

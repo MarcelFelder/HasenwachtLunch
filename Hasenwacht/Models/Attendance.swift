@@ -16,13 +16,6 @@ struct Attendance: Identifiable, Codable {
     var updatedAt: Date
     
     static func documentId(userId: String, date: Date) -> String {
-        "\(userId)_\(Self.dayFormatter.string(from: date))"
+        "\(userId)_\(LunchPhaseCalculator.dayDocumentId(for: date))"
     }
-
-    private static let dayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "Europe/Zurich")
-        return formatter
-    }()
 }
