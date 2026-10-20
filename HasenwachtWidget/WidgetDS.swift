@@ -15,28 +15,108 @@ enum WidgetDS {
 
     enum Colors {
         static let success = Color(lightHex: "1D9E75", darkHex: "3DC495")
-        static let successSurface = Color(lightHex: "E1F5EE", darkHex: "12332A")
         static let danger = Color(lightHex: "B33A3A", darkHex: "E06060")
-        static let dangerSurface = Color(lightHex: "FCEBEB", darkHex: "3A1E1E")
         static let warning = Color(lightHex: "BA7517", darkHex: "D89A3D")
-        static let background = Color(lightHex: "FFFFFF", darkHex: "1E1E20")
-        static let surfaceAlt = Color(lightHex: "EBE6DD", darkHex: "000000")
         static let textPrimary = Color(lightHex: "2C2C2A", darkHex: "F2F1ED")
         static let textSecondary = Color(lightHex: "5F5E5A", darkHex: "A6A49E")
         static let textTertiary = Color(lightHex: "888780", darkHex: "76746E")
     }
 
+    /// Vibrante, zustandsbasierte Verläufe für die Widget-Kacheln.
+    /// Jeder Stop ist selbst schon light/dark-adaptiv (siehe Color(lightHex:darkHex:)),
+    /// ein Verblassen bei .locked/.lunchOver passiert über einen dunklen Scrim-Overlay
+    /// statt über separate Gradient-Sets — hält die Farbsemantik konsistent.
+    enum Gradients {
+        static let attending: [Color] = [
+            Color(lightHex: "34D399", darkHex: "10B981"),
+            Color(lightHex: "0D9488", darkHex: "115E59")
+        ]
+        static let notAttending: [Color] = [
+            Color(lightHex: "FB7185", darkHex: "F43F5E"),
+            Color(lightHex: "BE123C", darkHex: "7F1D1D")
+        ]
+        static let neutral: [Color] = [
+            Color(lightHex: "94A3B8", darkHex: "475569"),
+            Color(lightHex: "475569", darkHex: "1E293B")
+        ]
+    }
+
     enum Typography {
-        static let subheading = Font.system(size: 17, weight: .medium)
-        static let body = Font.system(size: 15, weight: .regular)
-        static let caption = Font.system(size: 13, weight: .regular)
+        static let title = Font.system(size: 20, weight: .bold, design: .rounded)
+        static let subheading = Font.system(size: 15, weight: .semibold, design: .rounded)
+        static let body = Font.system(size: 14, weight: .semibold, design: .rounded)
+        static let caption = Font.system(size: 12, weight: .medium, design: .rounded)
+        static let caption2 = Font.system(size: 10, weight: .semibold, design: .rounded)
     }
 
     enum Radius {
-        static let md: CGFloat = 12
+        static let md: CGFloat = 14
+        static let lg: CGFloat = 22
         static let pill: CGFloat = 999
     }
 }
+
+// MARK: - Glas-Bausteine (Liquid-Glass-artige Chips/Pills über dem Gradient)
+
+/// Durchscheinende Pille für sekundäre Infos (Feiertag, Offline, Gestrichen, ...).
+struct GlassPill: View {
+    let systemImage: String
+    let text: String?
+    var prominent: Bool = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: systemImage)
+                .font(.system(size: 10, weight: .bold))
+            if let text {
+                Text(text)
+                    .font(WidgetDS.Typography.caption2)
+                    .lineLimit(1)
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, text == nil ? 6 : 9)
+        .padding(.vertical, 5)
+        .background(.white.opacity(prominent ? 0.30 : 0.18), in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 0.75))
+    }
+}
+
+/// Grosses, rundes "Glas"-Icon — der visuelle Anker jeder Kachel.
+struct GlassIcon: View {
+    let systemName: String
+    var diameter: CGFloat = 46
+    var badge: String? = nil
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Circle()
+                .fill(.white.opacity(0.22))
+                .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1))
+                .frame(width: diameter, height: diameter)
+                .overlay(
+                    Image(systemName: systemName)
+                        .font(.system(size: diameter * 0.42, weight: .bold))
+                        .foregroundStyle(.white)
+                )
+                .shadow(color: .black.opacity(0.15), radius: 6, y: 3)
+
+            if let badge {
+                Circle()
+                    .fill(.black.opacity(0.55))
+                    .frame(width: diameter * 0.4, height: diameter * 0.4)
+                    .overlay(
+                        Image(systemName: badge)
+                            .font(.system(size: diameter * 0.2, weight: .bold))
+                            .foregroundStyle(.white)
+                    )
+                    .offset(x: diameter * 0.08, y: -diameter * 0.08)
+            }
+        }
+    }
+}
+
+// MARK: - Farb-Extensions
 
 private extension Color {
     init(hex: String) {

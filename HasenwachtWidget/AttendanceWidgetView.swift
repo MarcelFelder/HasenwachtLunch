@@ -2,6 +2,13 @@
 //  AttendanceWidgetView.swift
 //  HasenwachtWidget
 //
+//  Visuelles Konzept: jede Kachel ist eine vollflächige, zustandsbasierte
+//  Gradient-Karte (grün = dabei, korall = abgemeldet) mit einem grossen
+//  "Glas"-Icon als Blickfang. Bei .locked/.lunchOver wird dieselbe Farbe
+//  über einen dunklen Scrim abgedunkelt statt die Farbsemantik zu wechseln —
+//  so bleibt "grün = angemeldet" immer gültig, auch wenn nicht mehr
+//  editierbar. Beim Small-Widget ist die GANZE Kachel der Toggle-Button.
+//
 
 import SwiftUI
 import WidgetKit
@@ -12,139 +19,271 @@ struct AttendanceWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        Group {
-            switch entry.state {
-            case .loggedOut:
-                loggedOutView
-            case .error(let message):
-                errorView(message)
-            case .attendance(let state):
-                attendanceView(state)
-            }
+        if family == .accessoryRectangular {
+            accessoryContent
+                .containerBackground(for: .widget) { Color.clear }
+        } else {
+            cardContent
+                .containerBackground(for: .widget) { background }
         }
-        .containerBackground(WidgetDS.Colors.background, for: .widget)
     }
 
-    // MARK: - Nicht eingeloggt / Fehler
+    // MARK: - Hintergrund
 
-    private var loggedOutView: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: "person.crop.circle.badge.exclamationmark")
-                .font(.system(size: 22))
-                .foregroundStyle(WidgetDS.Colors.textTertiary)
+    private var background: some View {
+        ZStack {
+            LinearGradient(colors: gradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
+            Color.black.opacity(scrimOpacity)
+            // dezenter Glanz-Schimmer für den "Liquid Glass"-Touch
+            LinearGradient(
+                colors: [.white.opacity(0.14), .clear, .clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    private var gradientColors: [Color] {
+        switch entry.state {
+        case .loggedOut, .error:
+            return WidgetDS.Gradients.neutral
+        case .attendance(let state):
+            return state.isAttending ? WidgetDS.Gradients.attending : WidgetDS.Gradients.notAttending
+        }
+    }
+
+    private var scrimOpacity: Double {
+        switch entry.state {
+        case .loggedOut, .error:
+            return 0.1
+        case .attendance(let state):
+            switch state.phase {
+            case .bookable:  return 0
+            case .locked:    return 0.35
+            case .lunchOver: return 0.55
+            }
+        }
+    }
+
+    // MARK: - Karten-Inhalt (systemSmall / systemMedium)
+
+    @ViewBuilder
+    private var cardContent: some View {
+        switch entry.state {
+        case .loggedOut:
+            loggedOutCard
+        case .error(let message):
+            errorCard(message)
+        case .attendance(let state):
+            attendanceCard(state)
+        }
+    }
+
+    private var loggedOutCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            GlassIcon(systemName: "person.fill.questionmark", diameter: 42)
+            Spacer(minLength: 4)
             Text("Nicht angemeldet")
                 .font(WidgetDS.Typography.subheading)
-                .foregroundStyle(WidgetDS.Colors.textPrimary)
-            Text("In der App anmelden")
+            Text("Zum Anmelden tippen")
                 .font(WidgetDS.Typography.caption)
-                .foregroundStyle(WidgetDS.Colors.textSecondary)
+                .opacity(0.85)
         }
+        .foregroundStyle(.white)
+        .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding()
         .widgetURL(URL(string: "hasenwacht://open"))
     }
 
-    private func errorView(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: "wifi.slash")
-                .font(.system(size: 20))
-                .foregroundStyle(WidgetDS.Colors.textTertiary)
-            Text(message)
-                .font(WidgetDS.Typography.caption)
-                .foregroundStyle(WidgetDS.Colors.textSecondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding()
-    }
-
-    // MARK: - Anwesenheits-Status
-
-    private func attendanceView(_ state: AttendanceDisplayState) -> some View {
+    private func errorCard(_ message: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            header(state)
+            GlassIcon(systemName: "wifi.slash", diameter: 42)
             Spacer(minLength: 4)
-            statusBadge(state)
+            Text(message)
+                .font(WidgetDS.Typography.subheading)
+        }
+        .foregroundStyle(.white)
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .widgetURL(URL(string: "hasenwacht://open"))
+    }
 
-            if family == .systemMedium {
-                Spacer(minLength: 4)
-                actionRow(state)
-            } else if state.phase == .bookable {
-                Spacer(minLength: 4)
-                toggleButton(state)
+    @ViewBuilder
+    private func attendanceCard(_ state: AttendanceDisplayState) -> some View {
+        if family == .systemMedium {
+            mediumCard(state)
+        } else {
+            smallCard(state)
+        }
+    }
+
+    // MARK: - systemSmall: die ganze Kachel ist der Toggle
+
+    @ViewBuilder
+    private func smallCard(_ state: AttendanceDisplayState) -> some View {
+        let visual = visual(for: state)
+        let tile = VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(state.date, format: .dateTime.weekday(.abbreviated))
+                    .font(WidgetDS.Typography.title)
+                Spacer()
+                if state.isStale {
+                    GlassPill(systemImage: "wifi.slash", text: nil)
+                }
+            }
+
+            Spacer(minLength: 2)
+
+            HStack {
+                Spacer()
+                GlassIcon(systemName: visual.mainIcon, diameter: 48, badge: visual.phaseBadge)
+                Spacer()
+            }
+
+            Spacer(minLength: 2)
+
+            Text(visual.title)
+                .font(WidgetDS.Typography.subheading)
+            Text(state.date, format: .dateTime.day().month(.abbreviated))
+                .font(WidgetDS.Typography.caption)
+                .opacity(0.85)
+
+            if let badge = contextBadge(state) {
+                badge
             }
         }
-        .padding()
+        .foregroundStyle(.white)
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+        if state.phase == .bookable {
+            Button(intent: ToggleAttendanceIntent(date: state.date, currentlyAttending: state.isAttending)) {
+                tile
+            }
+            .buttonStyle(.plain)
+        } else {
+            tile.widgetURL(URL(string: "hasenwacht://open"))
+        }
+    }
+
+    // MARK: - systemMedium: Info links, grosser Status + Aktion rechts
+
+    private func mediumCard(_ state: AttendanceDisplayState) -> some View {
+        let visual = visual(for: state)
+
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(state.date, format: .dateTime.weekday(.wide))
+                        .font(WidgetDS.Typography.title)
+                    if state.isStale {
+                        GlassPill(systemImage: "wifi.slash", text: nil)
+                    }
+                }
+                Text(state.date, format: .dateTime.day().month(.wide))
+                    .font(WidgetDS.Typography.caption)
+                    .opacity(0.85)
+
+                if let badge = contextBadge(state) {
+                    badge.padding(.top, 2)
+                }
+
+                Spacer(minLength: 4)
+
+                if let note = visual.phaseNote {
+                    Text(note)
+                        .font(WidgetDS.Typography.caption)
+                        .opacity(0.85)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+
+            VStack(spacing: 8) {
+                GlassIcon(systemName: visual.mainIcon, diameter: 44, badge: visual.phaseBadge)
+                Text(visual.title)
+                    .font(WidgetDS.Typography.body)
+
+                if state.phase == .bookable {
+                    Button(intent: ToggleAttendanceIntent(date: state.date, currentlyAttending: state.isAttending)) {
+                        HStack(spacing: 4) {
+                            Image(systemName: state.isAttending ? "xmark" : "checkmark")
+                                .font(.system(size: 10, weight: .bold))
+                            Text(state.isAttending ? "Abmelden" : "Anmelden")
+                        }
+                        .font(WidgetDS.Typography.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .tint(.white)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.white.opacity(0.22), in: Capsule())
+                    .overlay(Capsule().strokeBorder(.white.opacity(0.4), lineWidth: 0.75))
+                }
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private func header(_ state: AttendanceDisplayState) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(state.date, format: .dateTime.weekday(.wide))
-                .font(WidgetDS.Typography.subheading)
-                .foregroundStyle(WidgetDS.Colors.textPrimary)
-            HStack(spacing: 4) {
-                Text(state.date, format: .dateTime.day().month(.abbreviated))
-                    .font(WidgetDS.Typography.caption)
-                    .foregroundStyle(WidgetDS.Colors.textSecondary)
-                if let holidayName = state.holidayName {
-                    Text("· \(holidayName)")
-                        .font(WidgetDS.Typography.caption)
-                        .foregroundStyle(WidgetDS.Colors.warning)
-                }
-                if state.isCancelled {
-                    Text("· Gestrichen")
-                        .font(WidgetDS.Typography.caption)
-                        .foregroundStyle(WidgetDS.Colors.danger)
-                }
-                if state.isStale {
-                    Image(systemName: "wifi.slash")
-                        .font(.system(size: 10))
-                        .foregroundStyle(WidgetDS.Colors.textTertiary)
-                }
-            }
+    // MARK: - Feiertag / Gestrichen-Badge (gemeinsam für small & medium)
+
+    private func contextBadge(_ state: AttendanceDisplayState) -> GlassPill? {
+        if state.isCancelled {
+            return GlassPill(systemImage: "calendar.badge.minus", text: "Gestrichen")
         }
+        if let holidayName = state.holidayName {
+            return GlassPill(systemImage: "calendar.badge.exclamationmark", text: holidayName)
+        }
+        return nil
     }
 
-    private func statusBadge(_ state: AttendanceDisplayState) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: state.isAttending ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundStyle(state.isAttending ? WidgetDS.Colors.success : WidgetDS.Colors.danger)
-            Text(state.isAttending ? "Du bist dabei" : "Du bist abgemeldet")
-                .font(WidgetDS.Typography.body)
-                .foregroundStyle(WidgetDS.Colors.textPrimary)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(state.isAttending ? WidgetDS.Colors.successSurface : WidgetDS.Colors.dangerSurface)
-        .clipShape(RoundedRectangle(cornerRadius: WidgetDS.Radius.md))
+    // MARK: - Abgeleiteter visueller Zustand
+
+    private struct VisualState {
+        let mainIcon: String
+        let phaseBadge: String?
+        let title: String
+        let phaseNote: String?
     }
 
-    private func actionRow(_ state: AttendanceDisplayState) -> some View {
-        Group {
+    private func visual(for state: AttendanceDisplayState) -> VisualState {
+        let badge: String?
+        switch state.phase {
+        case .bookable:  badge = nil
+        case .locked:    badge = "lock.fill"
+        case .lunchOver: badge = "clock.fill"
+        }
+        return VisualState(
+            mainIcon: state.isAttending ? "checkmark" : "xmark",
+            phaseBadge: badge,
+            title: state.isAttending ? "Dabei" : "Abgemeldet",
+            phaseNote: LunchPhaseCalculator.message(for: state.phase)
+        )
+    }
+
+    // MARK: - Lock-Screen-Widget (accessoryRectangular)
+
+    @ViewBuilder
+    private var accessoryContent: some View {
+        switch entry.state {
+        case .loggedOut:
+            Label("Anmelden", systemImage: "person.crop.circle.badge.exclamationmark")
+                .widgetURL(URL(string: "hasenwacht://open"))
+        case .error:
+            Label("Offline", systemImage: "wifi.slash")
+        case .attendance(let state):
+            let icon = state.isAttending ? "checkmark.circle.fill" : "xmark.circle.fill"
+            let label = "\(state.date.formatted(.dateTime.weekday(.abbreviated))): \(state.isAttending ? "Dabei" : "Abgemeldet")"
             if state.phase == .bookable {
-                toggleButton(state)
+                Button(intent: ToggleAttendanceIntent(date: state.date, currentlyAttending: state.isAttending)) {
+                    Label(label, systemImage: icon)
+                }
+                .buttonStyle(.plain)
             } else {
-                Text(LunchPhaseCalculator.message(for: state.phase) ?? "")
-                    .font(WidgetDS.Typography.caption)
-                    .foregroundStyle(WidgetDS.Colors.textTertiary)
+                Label(label, systemImage: icon)
             }
         }
-    }
-
-    private func toggleButton(_ state: AttendanceDisplayState) -> some View {
-        Button(intent: ToggleAttendanceIntent(date: state.date, currentlyAttending: state.isAttending)) {
-            HStack(spacing: 5) {
-                Image(systemName: state.isAttending ? "xmark" : "checkmark")
-                    .font(.system(size: 11, weight: .bold))
-                Text(state.isAttending ? "Abmelden" : "Anmelden")
-                    .font(.system(size: 13, weight: .semibold))
-            }
-            .foregroundStyle(state.isAttending ? WidgetDS.Colors.textSecondary : .white)
-            .padding(.horizontal, 14)
-            .frame(height: 32)
-            .background(state.isAttending ? WidgetDS.Colors.surfaceAlt : WidgetDS.Colors.success)
-            .clipShape(RoundedRectangle(cornerRadius: WidgetDS.Radius.pill))
-        }
-        .buttonStyle(.plain)
     }
 }
