@@ -5,6 +5,7 @@
 
 import SwiftUI
 import WidgetKit
+import AppIntents
 
 struct AttendanceWidgetView: View {
     let entry: AttendanceEntry
