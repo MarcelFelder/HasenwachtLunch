@@ -9,36 +9,60 @@
 import SwiftUI
 import AuthenticationServices
 
+/// Tab-Identität für die `Tab`-Struct-API (iOS 18+). Nötig, weil diese API
+/// (anders als die alte `.tabItem`-API) eine explizite `selection`-Bindung
+/// braucht statt die Auswahl implizit über die Reihenfolge zu verwalten —
+/// das ist Voraussetzung für Liquid-Glass-Tab-Bar-Features wie Minimize-on-
+/// Scroll und Bottom-Accessory-Views.
+private enum MainTab: Hashable {
+    case lunch, cooking, absence, stats, profile
+}
+
 struct MainTabView: View {
 
     @Environment(CurrentUserService.self) private var currentUserService
     @Environment(OnboardingService.self)  private var onboardingService
+
+    @State private var selection: MainTab = .lunch
 
     private var canCook: Bool { currentUserService.currentUser?.canCook ?? false }
 
     var body: some View {
         @Bindable var onboarding = onboardingService
 
-        TabView {
-            LunchOverviewView()
-                .tabItem { Label("Mittagessen", systemImage: "fork.knife") }
-
-            if canCook {
-                CookingView()
-                    .tabItem { Label("Kochen", systemImage: "frying.pan") }
+        TabView(selection: $selection) {
+            Tab("Mittagessen", systemImage: "fork.knife", value: MainTab.lunch) {
+                LunchOverviewView()
             }
 
-            AbsenceView()
-                .tabItem { Label("Abwesenheiten", systemImage: "calendar.badge.minus") }
+            if canCook {
+                Tab("Kochen", systemImage: "frying.pan", value: MainTab.cooking) {
+                    CookingView()
+                }
+            }
 
-            StatsView()
-                .tabItem { Label("Statistik", systemImage: "chart.bar.fill") }
+            Tab("Abwesenheiten", systemImage: "calendar.badge.minus", value: MainTab.absence) {
+                AbsenceView()
+            }
 
-            ProfileView()
-                .tabItem { Label("Profil", systemImage: "person.crop.circle") }
+            Tab("Statistik", systemImage: "chart.bar.fill", value: MainTab.stats) {
+                StatsView()
+            }
+
+            Tab("Profil", systemImage: "person.crop.circle", value: MainTab.profile) {
+                ProfileView()
+            }
         }
         .sheet(isPresented: $onboarding.showTutorial) {
             TutorialSheetView()
+        }
+        // Falls der Kochen-Tab verschwindet (canCook wird deaktiviert) während er
+        // gerade aktiv ist, bliebe die Auswahl sonst auf einem nicht mehr
+        // existierenden Tab stehen.
+        .onChange(of: canCook) { _, stillCanCook in
+            if !stillCanCook, selection == .cooking {
+                selection = .lunch
+            }
         }
     }
 }
@@ -74,11 +98,10 @@ struct TutorialSheetView: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color.white.opacity(0.8))
                             .frame(width: 32, height: 32)
-                            .background(Color.white.opacity(0.15))
-                            .clipShape(Circle())
                     }
+                    .buttonStyle(.glass)
+                    .tint(.white)
                     .padding(.trailing, 24)
                     .padding(.top, 16)
                 }
@@ -112,10 +135,9 @@ struct TutorialSheetView: View {
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundStyle(slides[currentIndex].accentColor)
                                 .frame(maxWidth: .infinity).frame(height: 54)
-                                .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
                         }
+                        .buttonStyle(.glassProminent)
+                        .tint(.white)
                         .padding(.horizontal, 32)
                     } else {
                         Button {
@@ -125,10 +147,9 @@ struct TutorialSheetView: View {
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundStyle(slides[lastIndex].accentColor)
                                 .frame(maxWidth: .infinity).frame(height: 54)
-                                .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
                         }
+                        .buttonStyle(.glassProminent)
+                        .tint(.white)
                         .padding(.horizontal, 32)
                     }
                 }

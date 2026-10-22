@@ -26,7 +26,9 @@ struct Holiday {
 ///     print("Heute ist \(holiday.name)")
 /// }
 /// ```
-final class HolidayService {
+/// `nonisolated`: reine, zustandslose Feiertagsberechnung ohne UI-Bezug, wird aus
+/// Main-Actor- (App) und Hintergrund-Kontexten (Widget-TaskGroups, AppIntents) aufgerufen.
+nonisolated final class HolidayService {
 
     // MARK: - Public API
 

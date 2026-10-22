@@ -24,6 +24,9 @@ enum AttendanceWidgetState: Equatable {
     /// Netzwerk-/Auth-Fehler und kein brauchbarer Cache vorhanden.
     case error(String)
     case attendance(AttendanceDisplayState)
+    /// Mehrere Tage (Mo–Fr) für das grosse Widget — anders als `attendance` gibt es
+    /// hierfür keinen Offline-Cache-Fallback, bei Fehlern wird `.error` geliefert.
+    case week([AttendanceDisplayState])
 }
 
 struct AttendanceEntry: TimelineEntry {

@@ -10,7 +10,9 @@
 import Foundation
 import Security
 
-enum SharedKeychain {
+/// `nonisolated`: reine Keychain-I/O (thread-safe) ohne UI-Bezug, wird aus
+/// Main-Actor- (App) und Hintergrund-Kontexten (Widget-TaskGroups, AppIntents) aufgerufen.
+nonisolated enum SharedKeychain {
 
     struct StoredCredentials: Codable {
         var userId: String

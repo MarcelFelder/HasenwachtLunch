@@ -37,68 +37,85 @@ struct ProfileSetupView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Spacer()
+            ZStack {
+                DS.Colors.surface.ignoresSafeArea()
 
-                VStack(spacing: 12) {
-                    Image(systemName: "person.crop.circle.badge.plus")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.tint)
+                VStack(spacing: DS.Spacing.xl) {
+                    Spacer()
 
-                    Text("Willkommen!")
-                        .font(.title)
-                        .fontWeight(.bold)
-
-                    Text("Wie sollen dich die anderen nennen?")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                VStack(spacing: 16) {
-                    TextField("Vorname", text: $firstName)
-                        .textContentType(.givenName)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-
-                    TextField("Nachname", text: $lastName)
-                        .textContentType(.familyName)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                }
-                .padding(.horizontal)
-
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-
-                Spacer()
-
-                Button {
-                    Task { await save() }
-                } label: {
-                    HStack {
-                        if isSaving {
-                            ProgressView()
-                                .tint(.white)
+                    VStack(spacing: DS.Spacing.md) {
+                        ZStack {
+                            Circle()
+                                .fill(DS.Colors.primarySurface)
+                                .frame(width: 110, height: 110)
+                            Image(systemName: "person.crop.circle.badge.plus")
+                                .font(.system(size: 44, weight: .light))
+                                .foregroundStyle(DS.Colors.primaryDark)
                         }
-                        Text("Profil speichern")
-                            .fontWeight(.semibold)
+
+                        VStack(spacing: DS.Spacing.xs) {
+                            Text("Willkommen!")
+                                .font(DS.Typography.title)
+                                .foregroundStyle(DS.Colors.textPrimary)
+
+                            Text("Wie sollen dich die anderen nennen?")
+                                .font(DS.Typography.body)
+                                .foregroundStyle(DS.Colors.textSecondary)
+                                .multilineTextAlignment(.center)
+                        }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(canSave ? Color.accentColor : Color.gray.opacity(0.4))
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    VStack(spacing: 0) {
+                        TextField("Vorname", text: $firstName)
+                            .textContentType(.givenName)
+                            .font(DS.Typography.body)
+                            .tint(DS.Colors.primary)
+                            .autocorrectionDisabled()
+                            .padding(.horizontal, 16).padding(.vertical, 14)
+                            .background(DS.Colors.background)
+
+                        Divider().background(DS.Colors.border).padding(.leading, 16)
+
+                        TextField("Nachname", text: $lastName)
+                            .textContentType(.familyName)
+                            .font(DS.Typography.body)
+                            .tint(DS.Colors.primary)
+                            .autocorrectionDisabled()
+                            .padding(.horizontal, 16).padding(.vertical, 14)
+                            .background(DS.Colors.background)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+                    .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+                    .padding(.horizontal, DS.Spacing.md)
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(DS.Colors.danger)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, DS.Spacing.md)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        HStack {
+                            if isSaving { ProgressView().tint(.white) }
+                            Text("Profil speichern")
+                                .font(DS.Typography.subheading)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(DS.Colors.primary)
+                    .disabled(!canSave)
+                    .padding(.horizontal, DS.Spacing.md)
                 }
-                .disabled(!canSave)
-                .padding(.horizontal)
+                .padding(DS.Spacing.lg)
             }
-            .padding()
             .navigationBarBackButtonHidden(true)
             .onAppear { prefillFromAppleIfAvailable() }
         }

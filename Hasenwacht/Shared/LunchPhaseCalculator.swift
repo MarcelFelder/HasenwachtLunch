@@ -23,7 +23,13 @@ enum DayPhase: String, Codable {
     case lunchOver
 }
 
-enum LunchPhaseCalculator {
+/// `nonisolated` auf allen Member: reine, zustandslose Datumslogik ohne UI-Bezug,
+/// die sowohl von der App (Main Actor) als auch von der Widget-Extension aus
+/// Hintergrund-Kontexten (TaskGroups, AppIntent-`perform()`) aufgerufen wird. Ohne
+/// `nonisolated` würde das Projekt-Default `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`
+/// diese Funktionen künstlich an den Main Actor binden und in solchen Kontexten
+/// `await`/Hops erzwingen, obwohl nichts davon den Main Actor braucht.
+nonisolated enum LunchPhaseCalculator {
 
     // MARK: - Phase-Konfiguration
 

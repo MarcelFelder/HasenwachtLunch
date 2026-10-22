@@ -50,11 +50,11 @@ struct StatsView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("ZAHLEN")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(DS.Typography.kicker)
                     .foregroundStyle(DS.Colors.primary)
                     .tracking(2.5)
                 Text("Statistik")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(DS.Typography.largeTitle)
                     .foregroundStyle(DS.Colors.textPrimary)
             }
             Spacer()
@@ -66,35 +66,41 @@ struct StatsView: View {
     // MARK: - Period Picker
 
     private var periodPicker: some View {
-        HStack(spacing: 0) {
-            ForEach(StatsPeriod.allCases) { period in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        viewModel.setPeriod(period)
-                    }
-                } label: {
-                    Text(period.rawValue)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(viewModel.selectedPeriod == period
-                                         ? DS.Colors.textPrimary
-                                         : DS.Colors.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 36)
-                        .background(
-                            viewModel.selectedPeriod == period
-                                ? DS.Colors.background
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .shadow(color: viewModel.selectedPeriod == period
-                                ? Color.black.opacity(0.06) : Color.clear,
-                                radius: 2, y: 1)
+        GlassEffectContainer(spacing: 4) {
+            HStack(spacing: 4) {
+                ForEach(StatsPeriod.allCases) { period in
+                    periodSegment(period)
                 }
             }
         }
         .padding(4)
         .background(DS.Colors.surfaceAlt)
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    @ViewBuilder
+    private func periodSegment(_ period: StatsPeriod) -> some View {
+        let isSelected = viewModel.selectedPeriod == period
+        let action = { withAnimation(.easeInOut(duration: 0.2)) { viewModel.setPeriod(period) } }
+        if isSelected {
+            Button(action: action) {
+                Text(period.rawValue)
+                    .font(DS.Typography.smallBold)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 36)
+            }
+            .buttonStyle(.glass)
+            .tint(DS.Colors.textPrimary)
+        } else {
+            Button(action: action) {
+                Text(period.rawValue)
+                    .font(DS.Typography.smallBold)
+                    .foregroundStyle(DS.Colors.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 36)
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     // MARK: - Meine Statistik
@@ -188,9 +194,9 @@ struct StatsView: View {
                 .background(DS.Colors.background)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: DS.Colors.primary.opacity(0.15), radius: 10, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.cardElevated)
     }
 
     // MARK: - Rangliste
@@ -226,9 +232,9 @@ struct StatsView: View {
             }
         }
         .background(DS.Colors.background)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Skeleton
@@ -237,7 +243,7 @@ struct StatsView: View {
         VStack(spacing: 12) {
             // My Stats Skeleton
             VStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: DS.Radius.xl)
                     .fill(DS.Colors.surfaceAlt)
                     .frame(height: 90)
                     .shimmer()
@@ -253,8 +259,8 @@ struct StatsView: View {
                 }
                 .background(DS.Colors.background)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+            .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
 
             // Leaderboard Skeleton
             SkeletonUserList(title: "Rangliste", count: 4)

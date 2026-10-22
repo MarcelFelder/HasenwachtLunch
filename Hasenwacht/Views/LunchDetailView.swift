@@ -19,7 +19,7 @@ struct LunchDetailView: View {
     @ObservedObject private var childrenViewModel = ChildrenViewModel.shared
 
     private var day: DayViewModel? {
-        viewModel.days.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+        viewModel.day(for: date)
     }
 
     private var isPast: Bool {
@@ -69,10 +69,10 @@ struct LunchDetailView: View {
             ToolbarItem(placement: .principal) {
                 VStack(spacing: 1) {
                     Text(date.weekdayNameLong)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(DS.Typography.bodyBold)
                         .foregroundStyle(DS.Colors.textPrimary)
                     Text(date.formattedLong())
-                        .font(.system(size: 12))
+                        .font(DS.Typography.small)
                         .foregroundStyle(DS.Colors.textSecondary)
                 }
             }
@@ -91,7 +91,7 @@ struct LunchDetailView: View {
                 // Hintergrund-Gradient
                 LinearGradient(
                     colors: isAttending
-                        ? [Color.lunchEmerald.opacity(0.85), Color.lunchEmeraldDark]
+                        ? [DS.Colors.success.opacity(0.85), DS.Colors.successDark]
                         : [Color(white: 0.22), Color(white: 0.30)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -135,7 +135,7 @@ struct LunchDetailView: View {
                 .padding(.vertical, 20)
             }
             .frame(height: 110)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
 
             // Toggle-Zeile direkt darunter, innerhalb derselben Karte
             HStack {
@@ -161,47 +161,34 @@ struct LunchDetailView: View {
                 Spacer()
 
                 if isLocked {
-                    HStack(spacing: 4) {
-                        Image(systemName: isAttending ? "checkmark" : "xmark")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(isAttending ? "Dabei" : "Abgemeldet")
-                            .font(.system(size: 12, weight: .semibold))
+                    DSLockedChip(
+                        icon: isAttending ? "checkmark" : "xmark",
+                        text: isAttending ? "Dabei" : "Abgemeldet"
+                    )
+                } else if isAttending {
+                    Button {
+                        Task { await viewModel.toggleAttendance(for: day.date) }
+                    } label: {
+                        DSPillLabel(icon: "xmark", text: "Abmelden")
                     }
-                    .foregroundStyle(DS.Colors.textTertiary)
-                    .padding(.horizontal, 14)
-                    .frame(height: 34)
-                    .background(DS.Colors.surfaceAlt)
-                    .clipShape(RoundedRectangle(cornerRadius: 17))
-                    .overlay(RoundedRectangle(cornerRadius: 17).stroke(DS.Colors.border, lineWidth: 1))
+                    .buttonStyle(.glass)
+                    .tint(DS.Colors.textSecondary)
                 } else {
                     Button {
                         Task { await viewModel.toggleAttendance(for: day.date) }
                     } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: isAttending ? "xmark" : "checkmark")
-                                .font(.system(size: 11, weight: .bold))
-                            Text(isAttending ? "Abmelden" : "Anmelden")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                        .foregroundStyle(isAttending ? DS.Colors.textSecondary : .white)
-                        .padding(.horizontal, 14)
-                        .frame(height: 34)
-                        .background(isAttending ? DS.Colors.surface : Color.lunchEmerald)
-                        .clipShape(RoundedRectangle(cornerRadius: 17))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 17)
-                                .stroke(isAttending ? DS.Colors.border : Color.clear, lineWidth: 1)
-                        )
+                        DSPillLabel(icon: "checkmark", text: "Anmelden")
                     }
-                    .buttonStyle(ScaleButtonStyle())
+                    .buttonStyle(.glassProminent)
+                    .tint(DS.Colors.success)
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .dsShadow(DS.Shadow.card)
     }
 
     // MARK: - Tag-Streichung Card
@@ -263,34 +250,23 @@ struct LunchDetailView: View {
                     Button {
                         Task { await viewModel.uncancelLunch(date: day.date) }
                     } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: "arrow.uturn.backward")
-                                .font(.system(size: 10, weight: .bold))
-                            Text("Aktivieren")
-                                .font(.system(size: 12, weight: .semibold))
-                        }
-                        .foregroundStyle(DS.Colors.textSecondary)
-                        .padding(.horizontal, 12).frame(height: 34)
-                        .background(DS.Colors.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: 17))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 17)
-                                .stroke(DS.Colors.border, lineWidth: 1)
-                        )
+                        DSPillLabel(icon: "arrow.uturn.backward", text: "Aktivieren")
                     }
+                    .buttonStyle(.glass)
+                    .tint(DS.Colors.textSecondary)
                 }
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(DS.Colors.danger.opacity(0.3), lineWidth: 1)
         )
         .background(DS.Colors.dangerSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     /// "Tag streichen" Aktions-Karte — nur für angemeldete User sichtbar.
@@ -324,28 +300,17 @@ struct LunchDetailView: View {
                 Button {
                     showCancelConfirmation = true
                 } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Streichen")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundStyle(DS.Colors.danger)
-                    .padding(.horizontal, 12).frame(height: 34)
-                    .background(DS.Colors.dangerSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 17))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 17)
-                            .stroke(DS.Colors.danger.opacity(0.3), lineWidth: 1)
-                    )
+                    DSPillLabel(icon: "xmark", text: "Streichen")
                 }
+                .buttonStyle(.glass)
+                .tint(DS.Colors.danger)
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
         .confirmationDialog(
             "Tag wirklich streichen?",
             isPresented: $showCancelConfirmation,
@@ -378,11 +343,11 @@ struct LunchDetailView: View {
                 Spacer()
                 if day.lunchDay.forceLunch {
                     Text("Aktiviert")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.lunchEmerald)
+                        .font(DS.Typography.micro)
+                        .foregroundStyle(DS.Colors.success)
                         .padding(.horizontal, 8).padding(.vertical, 3)
                         .background(DS.Colors.successSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                 }
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
@@ -411,57 +376,35 @@ struct LunchDetailView: View {
                         Button {
                             Task { await viewModel.deactivateLunchForHoliday(date: day.date) }
                         } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 10, weight: .bold))
-                                Text("Deaktivieren")
-                                    .font(.system(size: 12, weight: .semibold))
-                            }
-                            .foregroundStyle(DS.Colors.danger)
-                            .padding(.horizontal, 12).frame(height: 34)
-                            .background(DS.Colors.dangerSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: 17))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 17)
-                                    .stroke(DS.Colors.danger.opacity(0.3), lineWidth: 1)
-                            )
+                            DSPillLabel(icon: "xmark", text: "Deaktivieren")
                         }
+                        .buttonStyle(.glass)
+                        .tint(DS.Colors.danger)
                     }
                 } else {
                     // Aktivieren
                     Button {
                         Task { await viewModel.activateLunchForHoliday(date: day.date) }
                     } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: "fork.knife")
-                                .font(.system(size: 11, weight: .bold))
-                            Text("Aktivieren")
-                                .font(.system(size: 12, weight: .semibold))
-                        }
-                        .foregroundStyle(DS.Colors.textSecondary)
-                        .padding(.horizontal, 12).frame(height: 34)
-                        .background(DS.Colors.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: 17))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 17)
-                                .stroke(DS.Colors.border, lineWidth: 1)
-                        )
+                        DSPillLabel(icon: "fork.knife", text: "Aktivieren")
                     }
+                    .buttonStyle(.glass)
+                    .tint(DS.Colors.textSecondary)
                 }
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(day.lunchDay.forceLunch
-                        ? Color.lunchEmerald.opacity(0.3)
+                        ? DS.Colors.success.opacity(0.3)
                         : DS.Colors.warning.opacity(0.3), lineWidth: 1)
         )
         .background(day.lunchDay.forceLunch ? DS.Colors.successSurface : DS.Colors.warningSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Cooking Card
@@ -469,8 +412,7 @@ struct LunchDetailView: View {
     private var cookingCard: some View {
         let slot = cookingViewModel.slot(for: date)
         let cook = slot.flatMap { s in
-            viewModel.days.first { Calendar.current.isDate($0.date, inSameDayAs: date) }?
-                .allUsers.first { $0.id == s.userId }
+            viewModel.day(for: date)?.allUsers.first { $0.id == s.userId }
         }
 
         return VStack(spacing: 0) {
@@ -526,12 +468,12 @@ struct LunchDetailView: View {
             .padding(.vertical, 14)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(slot != nil ? Color.cookingPurple.opacity(0.25) : DS.Colors.border, lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Children Card (eigene Kinder für diesen Tag steuern)
@@ -568,9 +510,9 @@ struct LunchDetailView: View {
                     }
                 }
                 .background(DS.Colors.background)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-                .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+                .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+                .dsShadow(DS.Shadow.subtle)
             }
         }
     }
@@ -608,8 +550,8 @@ struct LunchDetailView: View {
                 if let taker = currentTaker {
                     if taker == currentUserId {
                         Text(isPrimary ? "Standard: kommt mit dir" : "Du übernimmst")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.lunchEmerald)
+                            .font(DS.Typography.micro)
+                            .foregroundStyle(DS.Colors.success)
                     } else {
                         let takerUser = day.allUsers.first { $0.id == taker }
                         Text("Kommt mit \(takerUser?.firstName ?? "?")")
@@ -658,7 +600,7 @@ struct LunchDetailView: View {
             return false
         }()
 
-        Button {
+        let toggle = {
             Task {
                 guard let childId = child.id else { return }
                 if isDabei {
@@ -673,21 +615,24 @@ struct LunchDetailView: View {
                     )
                 }
             }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: isDabei ? "checkmark" : "plus")
-                    .font(.system(size: 11, weight: .bold))
-                Text(isDabei ? "Dabei" : "Mitnehmen")
-                    .font(.system(size: 12, weight: .semibold))
-            }
-            .foregroundStyle(isDabei ? .white : DS.Colors.primary)
-            .padding(.horizontal, 12).frame(height: 32)
-            .background(isDabei ? DS.Colors.primary : DS.Colors.primarySurface)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
         }
+
+        Group {
+            if isDabei {
+                Button { _ = toggle() } label: {
+                    DSPillLabel(icon: "checkmark", text: "Dabei", height: 32)
+                }
+                .buttonStyle(.glassProminent)
+            } else {
+                Button { _ = toggle() } label: {
+                    DSPillLabel(icon: "plus", text: "Mitnehmen", height: 32)
+                }
+                .buttonStyle(.glass)
+            }
+        }
+        .tint(DS.Colors.primary)
         .disabled(!iCanToggle)
         .opacity(iCanToggle ? 1.0 : 0.5)
-        .buttonStyle(ScaleButtonStyle())
     }
 
     // MARK: - Dabei Section (immer sichtbar)
@@ -696,7 +641,7 @@ struct LunchDetailView: View {
         let attendingIds = Set(day.attendees.compactMap { $0.id })
 
         return VStack(alignment: .leading, spacing: 0) {
-            sectionHeader(title: "Dabei", count: day.attendees.count, color: Color.lunchEmerald)
+            DSSectionHeader(title: "Dabei", count: day.attendees.count, dotColor: DS.Colors.success)
 
             if day.attendees.isEmpty {
                 emptyRow(text: "Niemand angemeldet")
@@ -715,16 +660,16 @@ struct LunchDetailView: View {
             }
         }
         .background(DS.Colors.background)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Abgemeldet Section (immer sichtbar)
 
     private func absenteesCard(day: DayViewModel) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionHeader(title: "Abgemeldet", count: day.absentees.count, color: DS.Colors.textTertiary)
+            DSSectionHeader(title: "Abgemeldet", count: day.absentees.count, dotColor: DS.Colors.textTertiary)
 
             if day.absentees.isEmpty {
                 emptyRow(text: "Alle dabei")
@@ -741,39 +686,16 @@ struct LunchDetailView: View {
             }
         }
         .background(DS.Colors.background)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Helpers
 
-    private func sectionHeader(title: String, count: Int, color: Color) -> some View {
-        HStack(alignment: .center, spacing: 8) {
-            Circle()
-                .fill(color)
-                .frame(width: 6, height: 6)
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(DS.Colors.textSecondary)
-            Spacer()
-            Text("\(count)")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(DS.Colors.textTertiary)
-                .frame(minWidth: 20)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(DS.Colors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .overlay(Divider().background(DS.Colors.border), alignment: .bottom)
-    }
-
     private func emptyRow(text: String) -> some View {
         Text(text)
-            .font(.system(size: 14))
+            .font(DS.Typography.body)
             .foregroundStyle(DS.Colors.textTertiary)
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
@@ -859,27 +781,10 @@ private struct DetailUserRow: View {
             } else {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.lunchEmerald)
+                    .foregroundStyle(DS.Colors.success)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
-}
-
-// MARK: - Button Style
-
-private struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Farb-Konstanten
-
-private extension Color {
-    static let lunchEmerald     = Color(red: 0.13, green: 0.70, blue: 0.44)
-    static let lunchEmeraldDark = Color(red: 0.09, green: 0.55, blue: 0.34)
 }

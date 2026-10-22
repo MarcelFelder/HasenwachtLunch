@@ -90,9 +90,9 @@ struct SkeletonDayCard: View {
         }
         .padding(16)
         .background(DS.Colors.background)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(DS.Colors.border, lineWidth: 1)
         )
     }
@@ -119,7 +119,7 @@ struct SkeletonDetailHero: View {
     var body: some View {
         VStack(spacing: 0) {
             // Gradient Banner Skeleton
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .fill(DS.Colors.surfaceAlt)
                 .frame(height: 110)
                 .shimmer()
@@ -137,8 +137,8 @@ struct SkeletonDetailHero: View {
             .padding(.vertical, 12)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
         .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
     }
 }
@@ -181,8 +181,8 @@ struct SkeletonUserList: View {
                 }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
         .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
     }
 }

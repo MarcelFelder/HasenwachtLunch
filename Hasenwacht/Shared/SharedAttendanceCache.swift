@@ -12,7 +12,9 @@
 
 import Foundation
 
-struct SharedAttendanceCache: Codable, Equatable {
+/// `nonisolated`: reine UserDefaults-I/O ohne UI-Bezug, wird aus Main-Actor- (App)
+/// und Hintergrund-Kontexten (Widget-TaskGroups, AppIntents) aufgerufen.
+nonisolated struct SharedAttendanceCache: Codable, Equatable {
     var date: Date
     var isAttending: Bool
     var phase: DayPhase

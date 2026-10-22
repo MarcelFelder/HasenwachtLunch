@@ -97,32 +97,32 @@ struct AbsenceView: View {
                 Divider().background(DS.Colors.border)
 
                 // Wochen-Navigation
-                HStack(spacing: 4) {
-                    Button { teamViewModel.weekOffset -= 1 } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(DS.Colors.textSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(DS.Colors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    Spacer()
-                    VStack(spacing: 1) {
-                        Text(teamViewModel.weekLabel)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(DS.Colors.textPrimary)
-                        Text(teamViewModel.weekDateRange)
-                            .font(.system(size: 11))
-                            .foregroundStyle(DS.Colors.textTertiary)
-                    }
-                    Spacer()
-                    Button { teamViewModel.weekOffset += 1 } label: {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(DS.Colors.textSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(DS.Colors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                GlassEffectContainer(spacing: 4) {
+                    HStack(spacing: 4) {
+                        Button { teamViewModel.weekOffset -= 1 } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 12, weight: .semibold))
+                                .frame(width: 30, height: 30)
+                        }
+                        .buttonStyle(.glass)
+                        .tint(DS.Colors.textSecondary)
+                        Spacer()
+                        VStack(spacing: 1) {
+                            Text(teamViewModel.weekLabel)
+                                .font(DS.Typography.smallBold)
+                                .foregroundStyle(DS.Colors.textPrimary)
+                            Text(teamViewModel.weekDateRange)
+                                .font(DS.Typography.micro)
+                                .foregroundStyle(DS.Colors.textTertiary)
+                        }
+                        Spacer()
+                        Button { teamViewModel.weekOffset += 1 } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .frame(width: 30, height: 30)
+                        }
+                        .buttonStyle(.glass)
+                        .tint(DS.Colors.textSecondary)
                     }
                 }
                 .padding(.horizontal, 16).padding(.vertical, 10)
@@ -135,16 +135,21 @@ struct AbsenceView: View {
                     Spacer().frame(width: 88)
                     ForEach(teamViewModel.currentWeekDates, id: \.self) { date in
                         let isToday = Calendar.current.isDateInToday(date)
+                        let isPast = Calendar.current.startOfDay(for: date) < Calendar.current.startOfDay(for: Date())
                         let cal = Calendar.current
-                        VStack(spacing: 1) {
+                        VStack(spacing: 3) {
                             Text(date.weekdayName.replacingOccurrences(of: ".", with: ""))
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(isToday ? DS.Colors.primary : DS.Colors.textTertiary)
                             Text(String(cal.component(.day, from: date)))
                                 .font(.system(size: 11, weight: isToday ? .bold : .regular))
-                                .foregroundStyle(isToday ? DS.Colors.primary : DS.Colors.textTertiary)
+                                .foregroundStyle(isToday ? .white : DS.Colors.textTertiary)
+                                .frame(width: 20, height: 20)
+                                .background(isToday ? DS.Colors.primary : Color.clear)
+                                .clipShape(Circle())
                         }
                         .frame(maxWidth: .infinity)
+                        .opacity(isPast && !isToday ? 0.5 : 1.0)
                     }
                     Spacer().frame(width: 16)
                 }
@@ -163,20 +168,27 @@ struct AbsenceView: View {
 
                 Divider().background(DS.Colors.border)
 
-                // Legende
+                // Legende — Grund (Ferien/wiederkehrend) steht nur noch als kleines
+                // Icon im jeweiligen Balken, nicht mehr als eigene Farbe/Kategorie:
+                // auf einen Blick zählt nur "dabei oder abwesend".
                 HStack(spacing: 14) {
-                    legendDot(color: DS.Colors.primary, label: "Ferien")
-                    legendDot(color: Color.absenceBlue, label: "Wiederkehrend")
-                    legendDot(color: DS.Colors.surface, label: "Dabei", bordered: true)
+                    legendDot(color: Color.absenceBlue, label: "Abwesend")
+                    legendDot(color: DS.Colors.success.opacity(0.15), label: "Dabei", bordered: true)
                     Spacer()
+                    HStack(spacing: 3) {
+                        Image(systemName: "airplane").font(.system(size: 9))
+                        Image(systemName: "repeat").font(.system(size: 9))
+                        Text("= Grund").font(.system(size: 10))
+                    }
+                    .foregroundStyle(DS.Colors.textTertiary)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 10)
                 .background(DS.Colors.background)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     private func legendDot(color: Color, label: String, bordered: Bool = false) -> some View {
@@ -197,11 +209,11 @@ struct AbsenceView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("PLANUNG")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(DS.Typography.kicker)
                     .foregroundStyle(DS.Colors.primary)
                     .tracking(2.5)
                 Text("Abwesenheiten")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(DS.Typography.largeTitle)
                     .foregroundStyle(DS.Colors.textPrimary)
             }
             Spacer()
@@ -267,9 +279,9 @@ struct AbsenceView: View {
             .padding(.vertical, 16)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Ferienabwesenheiten
@@ -287,17 +299,10 @@ struct AbsenceView: View {
                 }
                 Spacer()
                 Button { showAddVacation = true } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus").font(.system(size: 11, weight: .bold))
-                        Text("Hinzufügen").font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.absenceAmber)
-                    .padding(.horizontal, 10)
-                    .frame(height: 28)
-                    .background(Color.absenceAmber.opacity(0.10))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.absenceAmber.opacity(0.25), lineWidth: 1))
+                    DSPillLabel(icon: "plus", text: "Hinzufügen", height: 28)
                 }
+                .buttonStyle(.glass)
+                .tint(Color.absenceAmber)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -328,9 +333,9 @@ struct AbsenceView: View {
                 .background(DS.Colors.background)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Footer
@@ -424,11 +429,10 @@ private struct VacationRow: View {
             Button(action: onDelete) {
                 Image(systemName: "trash")
                     .font(.system(size: 13))
-                    .foregroundStyle(DS.Colors.danger.opacity(0.7))
                     .frame(width: 32, height: 32)
-                    .background(DS.Colors.dangerSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
+            .buttonStyle(.glass)
+            .tint(DS.Colors.danger)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -468,8 +472,8 @@ struct AddVacationSheet: View {
                             .padding(.horizontal, 16).padding(.vertical, 14)
                             .background(DS.Colors.background)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+                    .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
 
                     // Datum Card
                     VStack(spacing: 0) {
@@ -506,21 +510,20 @@ struct AddVacationSheet: View {
                         .padding(.horizontal, 16).padding(.vertical, 12)
                         .background(DS.Colors.background)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+                    .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
 
                     Button {
                         onSave(startDate, endDate, name.isEmpty ? nil : name)
                         dismiss()
                     } label: {
                         Text("Speichern")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .font(DS.Typography.subheading)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
-                            .background(Color.absenceAmber)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .buttonStyle(.glassProminent)
+                    .tint(Color.absenceAmber)
                     .padding(.top, 4)
 
                     Spacer()
@@ -559,22 +562,32 @@ private struct GanttUserRow: View {
             .frame(width: 80, alignment: .leading)
             .padding(.leading, 16)
 
-            // Tages-Zellen
+            // Tages-Zellen — nur noch EINE Farbe für "abwesend" (der Grund ist
+            // sekundär und steckt als kleines Icon im Balken), "dabei" ist ein
+            // bewusst dezenter Kontrast dazu statt eine dritte Farbe.
             HStack(spacing: 3) {
                 ForEach(dates, id: \.self) { date in
                     let reason = info.absenceReason(on: date)
+                    let isAbsent = isActuallyAbsent(on: date, patternAbsent: reason != nil)
                     let isToday = Calendar.current.isDateInToday(date)
+                    let isPast = Calendar.current.startOfDay(for: date) < Calendar.current.startOfDay(for: Date())
 
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(cellColor(for: reason))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 26)
-                        .overlay(
-                            isToday && reason == nil ?
-                                RoundedRectangle(cornerRadius: 5)
-                                    .stroke(DS.Colors.primary.opacity(0.4), lineWidth: 1.5)
-                                : nil
-                        )
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(cellColor(isAbsent: isAbsent))
+                        if isAbsent, let reason {
+                            Image(systemName: reason.isVacation ? "airplane" : "repeat")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(Color.absenceBlue)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 26)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(DS.Colors.primary, lineWidth: isToday ? 2 : 0)
+                    )
+                    .opacity(isPast && !isToday ? 0.5 : 1.0)
                 }
             }
             .padding(.horizontal, 12)
@@ -583,12 +596,28 @@ private struct GanttUserRow: View {
         .background(DS.Colors.background)
     }
 
-    private func cellColor(for reason: AbsenceReason?) -> Color {
-        guard let reason else { return DS.Colors.surface }
-        switch reason {
-        case .vacation:  return DS.Colors.primary.opacity(0.75)
-        case .recurring: return Color.absenceBlue.opacity(0.75)
+    private func cellColor(isAbsent: Bool) -> Color {
+        isAbsent ? Color.absenceBlue.opacity(0.22) : DS.Colors.success.opacity(0.15)
+    }
+
+    /// `info.absenceReason(on:)` kennt nur Ferien/wiederkehrende *Regeln* — einmalige,
+    /// manuelle Abmeldungen ohne Regel dahinter (z.B. "heute bin ich mal krank") landen
+    /// zwar als echtes Attendance-Dokument in Firestore, aber nicht in dieser Regel-
+    /// basierten Sicht. `LunchDaysViewModel` hat die tatsächlichen Tagesdaten bereits
+    /// geladen (auch rückwirkend bis zum Installationsdatum) und kennt daher auch
+    /// Ad-hoc-Abmeldungen — das ist hier die verlässlichere Quelle. Nur an Feiertagen/
+    /// gestrichenen Tagen fallen wir auf die Regel-Sicht zurück, weil dort in
+    /// `LunchDaysViewModel` pauschal alle als "absent" gelten (kein Lunch, nicht
+    /// persönlich abwesend) — das würde hier sonst fälschlich jeden rot färben.
+    private func isActuallyAbsent(on date: Date, patternAbsent: Bool) -> Bool {
+        guard let userId = info.user.id,
+              let day = LunchDaysViewModel.shared.day(for: date),
+              !day.lunchDay.isCancelled,
+              !(day.lunchDay.isHoliday && !day.lunchDay.forceLunch)
+        else {
+            return patternAbsent
         }
+        return day.absentees.contains { $0.id == userId }
     }
 }
 

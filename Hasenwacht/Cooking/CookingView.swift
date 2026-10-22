@@ -58,11 +58,11 @@ struct CookingView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("KOCHEN")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(DS.Typography.kicker)
                         .foregroundStyle(DS.Colors.primary)
                         .tracking(2.5)
                     Text("Kochplan")
-                        .font(.system(size: 26, weight: .bold))
+                        .font(DS.Typography.largeTitle)
                         .foregroundStyle(DS.Colors.textPrimary)
                 }
                 Spacer()
@@ -76,45 +76,21 @@ struct CookingView: View {
     }
 
     private var weekSwitcher: some View {
-        HStack(spacing: 4) {
-            Button { if weekOffset > minWeekOffset { weekOffset -= 1 } } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(weekOffset == minWeekOffset ? DS.Colors.textTertiary : DS.Colors.textSecondary)
-                    .frame(width: 44, height: 44)
-                    .background(weekOffset == minWeekOffset ? Color.clear : DS.Colors.background)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .disabled(weekOffset == minWeekOffset)
-
-            Spacer()
-            VStack(spacing: 2) {
-                Text(weekLabel).font(.system(size: 15, weight: .bold)).foregroundStyle(DS.Colors.textPrimary)
-                Text(weekDateRange).font(.system(size: 12, weight: .medium)).foregroundStyle(DS.Colors.textSecondary)
-            }
-            Spacer()
-
-            Button { if weekOffset < maxWeekOffset { weekOffset += 1 } } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(weekOffset < maxWeekOffset ? DS.Colors.textSecondary : DS.Colors.textTertiary)
-                    .frame(width: 44, height: 44)
-                    .background(weekOffset < maxWeekOffset ? DS.Colors.background : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .disabled(weekOffset >= maxWeekOffset)
-        }
-        .padding(.horizontal, 6).padding(.vertical, 6)
-        .background(DS.Colors.surfaceAlt)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        DSWeekSwitcher(
+            title: weekLabel,
+            subtitle: weekDateRange,
+            canGoBack: weekOffset > minWeekOffset,
+            canGoForward: weekOffset < maxWeekOffset,
+            onBack: { if weekOffset > minWeekOffset { weekOffset -= 1 } },
+            onForward: { if weekOffset < maxWeekOffset { weekOffset += 1 } }
+        )
     }
 
     private var dayListSection: some View {
         VStack(spacing: 8) {
             ForEach(weekDays, id: \.self) { date in
                 let slot = viewModel.slot(for: date)
-                let dayVM = lunchViewModel.days
-                    .first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+                let dayVM = lunchViewModel.day(for: date)
                 let cook = dayVM?.allUsers.first { $0.id == slot?.userId }
                 let absentees = dayVM?.absentees ?? []
 
@@ -131,7 +107,7 @@ struct CookingView: View {
             }
 
             Text("Nur du kannst deine eigenen Kocheinträge bearbeiten.")
-                .font(.system(size: 11))
+                .font(DS.Typography.micro)
                 .foregroundStyle(DS.Colors.textTertiary)
                 .multilineTextAlignment(.center)
                 .padding(.top, 8).padding(.horizontal, 16)
@@ -154,11 +130,15 @@ struct CookingView: View {
     private var weekDateRange: String {
         guard let first = weekDays.first, let last = weekDays.last else { return "" }
         let cal = Calendar.current
+        return "\(cal.component(.day, from: first)). – \(cal.component(.day, from: last)). \(Self.monthFormatter.string(from: last))"
+    }
+
+    private static let monthFormatter: DateFormatter = {
         let df = DateFormatter()
         df.locale = Locale(identifier: "de_CH")
         df.dateFormat = "MMMM"
-        return "\(cal.component(.day, from: first)). – \(cal.component(.day, from: last)). \(df.string(from: last))"
-    }
+        return df
+    }()
 }
 
 // MARK: - Day Card
@@ -280,7 +260,7 @@ private struct CookingDayCard: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(Color.cookingPurple)
                         Text(slot?.hasMenu == true ? "Menü bearbeiten" : "Menü bekannt geben")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(DS.Typography.small)
                             .foregroundStyle(Color.cookingPurple)
                         Spacer()
                         if slot?.hasMenu == true {
@@ -295,17 +275,18 @@ private struct CookingDayCard: View {
                     .padding(.horizontal, 16).padding(.vertical, 11)
                     .background(Color.cookingPurple.opacity(0.04))
                 }
+                .buttonStyle(.plain)
             }
         }
         .background(DS.Colors.background)
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(isCurrentUserCooking && !isPast
                         ? Color.cookingPurple.opacity(0.4) : DS.Colors.border,
                         lineWidth: isCurrentUserCooking && !isPast ? 2 : 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(isPast ? 0 : 0.04), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .dsShadow(isPast ? .init(color: .clear, radius: 0, x: 0, y: 0) : DS.Shadow.subtle)
         .opacity(isPast ? 0.6 : 1.0)
     }
 
@@ -321,29 +302,16 @@ private struct CookingDayCard: View {
     private var actionButton: some View {
         if isCurrentUserCooking {
             Button(action: onRelease) {
-                HStack(spacing: 4) {
-                    Image(systemName: "xmark").font(.system(size: 11, weight: .bold))
-                    Text("Austragen").font(.system(size: 12, weight: .semibold))
-                }
-                .foregroundStyle(DS.Colors.textSecondary)
-                .padding(.horizontal, 12).frame(height: 36)
-                .background(DS.Colors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(DS.Colors.border, lineWidth: 1))
+                DSPillLabel(icon: "xmark", text: "Austragen", height: 36)
             }
-            .buttonStyle(ScaleButtonStyle())
+            .buttonStyle(.glass)
+            .tint(DS.Colors.textSecondary)
         } else if slot == nil {
             Button(action: onClaim) {
-                HStack(spacing: 4) {
-                    Image(systemName: "hand.raised.fill").font(.system(size: 11, weight: .bold))
-                    Text("Ich koche").font(.system(size: 12, weight: .semibold))
-                }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 12).frame(height: 36)
-                .background(Color.cookingPurple)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                DSPillLabel(icon: "hand.raised.fill", text: "Ich koche", height: 36)
             }
-            .buttonStyle(ScaleButtonStyle())
+            .buttonStyle(.glassProminent)
+            .tint(Color.cookingPurple)
         }
     }
 }
@@ -383,13 +351,12 @@ struct MenuEditSheet: View {
                         HStack {
                             if isSaving { ProgressView().tint(.white) }
                             Text(isSaving ? "Wird gespeichert…" : "Menü speichern")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(DS.Typography.subheading)
                         }
-                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 50)
-                        .background(title.isEmpty ? DS.Colors.textTertiary : Color.cookingPurple)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .buttonStyle(.glassProminent)
+                    .tint(Color.cookingPurple)
                     .disabled(title.isEmpty || isSaving)
                     .padding(.top, 4)
                     Spacer()
@@ -429,8 +396,8 @@ struct MenuEditSheet: View {
                 .padding(.horizontal, 16).padding(.vertical, 14)
                 .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
     }
 }
 
@@ -438,14 +405,4 @@ struct MenuEditSheet: View {
 
 extension Date: @retroactive Identifiable {
     public var id: TimeInterval { timeIntervalSince1970 }
-}
-
-// MARK: - Styles & Farben
-
-private struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
-    }
 }

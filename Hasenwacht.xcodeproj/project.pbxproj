@@ -7,62 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		016C255ABD52CCEFEC368A23 /* Hasenwacht/Shared/LunchPhaseCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DE115DCCCD0223AB8A0055 /* Hasenwacht/Shared/LunchPhaseCalculator.swift */; };
+		0F3CD8193B7D2B804701E10B /* Hasenwacht/GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7469E06042C974E1A4112FDB /* Hasenwacht/GoogleService-Info.plist */; };
+		1DFA40FAFB5A0A5C4F1DC7CF /* AttendanceWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5364FD5EE9ECD874812EBE8 /* AttendanceWidgetView.swift */; };
+		4C9CAC2838ECAAEDF6314AA9 /* ToggleAttendanceIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534E8AFC8D95192E9F665226 /* ToggleAttendanceIntent.swift */; };
+		50D4AA60A02C17209DA79B11 /* AttendanceTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCA9B140C8B1B0ECA4D1E8A /* AttendanceTimelineProvider.swift */; };
+		78FBD2F0BCF0FD46489E53CF /* Hasenwacht/Shared/SharedAttendanceCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E648FEA56B3CB72B91EDCA7 /* Hasenwacht/Shared/SharedAttendanceCache.swift */; };
+		7E77EB1E34587385C7691009 /* Hasenwacht/Shared/SharedKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE2C64F4223F63670CE57AD /* Hasenwacht/Shared/SharedKeychain.swift */; };
+		8721EA189935AABAA05235EA /* HasenwachtWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11C66807BB356D9FCF42093 /* HasenwachtWidgetBundle.swift */; };
+		87F9224632293C8D9E6DD9F1 /* Hasenwacht/Shared/HolidayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CE8ABC4DDB652CA7FDB839 /* Hasenwacht/Shared/HolidayService.swift */; };
+		A115BBDD8EC88D0543426EA4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFD8BA7801D1DE5EDA58D6AF /* SwiftUI.framework */; };
+		A4B956B2EF7D800E5CB761F7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7FB724780FDFEB6DF13ECAA9 /* WidgetKit.framework */; };
+		AA15A0F616D6B1DB14BB9BF6 /* WidgetDS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EF36AA7717FA8799959E0DB /* WidgetDS.swift */; };
+		AE73FB063EA5321C041CAD45 /* AttendanceEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 366FF756D105DA3BCC9DFEC4 /* AttendanceEntry.swift */; };
 		BC310C622FA935170072A3E9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BC310C612FA935170072A3E9 /* FirebaseAuth */; };
 		BC310C642FA935170072A3E9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BC310C632FA935170072A3E9 /* FirebaseFirestore */; };
 		BC310C662FA935170072A3E9 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = BC310C652FA935170072A3E9 /* FirebaseStorage */; };
-		87F9224632293C8D9E6DD9F1 /* HolidayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CE8ABC4DDB652CA7FDB839 /* HolidayService.swift */; };
-		016C255ABD52CCEFEC368A23 /* LunchPhaseCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DE115DCCCD0223AB8A0055 /* LunchPhaseCalculator.swift */; };
-		C2ECA8013C8BEB6CCDA45333 /* AppGroupConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 706A1619746A36E4A9BACECC /* AppGroupConstants.swift */; };
-		78FBD2F0BCF0FD46489E53CF /* SharedAttendanceCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E648FEA56B3CB72B91EDCA7 /* SharedAttendanceCache.swift */; };
-		7E77EB1E34587385C7691009 /* SharedKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE2C64F4223F63670CE57AD /* SharedKeychain.swift */; };
-		8721EA189935AABAA05235EA /* HasenwachtWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11C66807BB356D9FCF42093 /* HasenwachtWidgetBundle.swift */; };
-		AE73FB063EA5321C041CAD45 /* AttendanceEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 366FF756D105DA3BCC9DFEC4 /* AttendanceEntry.swift */; };
-		50D4AA60A02C17209DA79B11 /* AttendanceTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCA9B140C8B1B0ECA4D1E8A /* AttendanceTimelineProvider.swift */; };
+		C2ECA8013C8BEB6CCDA45333 /* Hasenwacht/Shared/AppGroupConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 706A1619746A36E4A9BACECC /* Hasenwacht/Shared/AppGroupConstants.swift */; };
+		C48DE33F48DDE0E0A6AB12AF /* HasenwachtWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5CE4E5C7016F7995D6482192 /* HasenwachtWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D310CAB15233994062D5A0B1 /* AttendanceWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534B3C17063665A1F6B3C0E2 /* AttendanceWidget.swift */; };
-		1DFA40FAFB5A0A5C4F1DC7CF /* AttendanceWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5364FD5EE9ECD874812EBE8 /* AttendanceWidgetView.swift */; };
-		4C9CAC2838ECAAEDF6314AA9 /* ToggleAttendanceIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534E8AFC8D95192E9F665226 /* ToggleAttendanceIntent.swift */; };
-		AA15A0F616D6B1DB14BB9BF6 /* WidgetDS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EF36AA7717FA8799959E0DB /* WidgetDS.swift */; };
 		E01CA9139D399ED3CDFBEFA5 /* FirestoreRESTClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF7C3E1A356C48BD668945BB /* FirestoreRESTClient.swift */; };
 		EF9D55EB1AF2F5C4AB4DF197 /* FirebaseTokenRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564C7D0E44E5983B8E47F653 /* FirebaseTokenRefresher.swift */; };
 		F855D7C1E00A8BC452CD79E6 /* FirebaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6147FC07127728B28D93C0 /* FirebaseConfig.swift */; };
-		A4B956B2EF7D800E5CB761F7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7FB724780FDFEB6DF13ECAA9 /* WidgetKit.framework */; };
-		A115BBDD8EC88D0543426EA4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFD8BA7801D1DE5EDA58D6AF /* SwiftUI.framework */; };
-		0F3CD8193B7D2B804701E10B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7469E06042C974E1A4112FDB /* GoogleService-Info.plist */; };
-		C48DE33F48DDE0E0A6AB12AF /* HasenwachtWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5CE4E5C7016F7995D6482192 /* HasenwachtWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
-
-/* Begin PBXFileReference section */
-		BCBE07F92FA915C70004EB6F /* Hasenwacht.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Hasenwacht.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		5CE4E5C7016F7995D6482192 /* HasenwachtWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HasenwachtWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		7FB724780FDFEB6DF13ECAA9 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
-		BFD8BA7801D1DE5EDA58D6AF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		A9CE8ABC4DDB652CA7FDB839 /* HolidayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/HolidayService.swift; sourceTree = "<group>"; };
-		D3DE115DCCCD0223AB8A0055 /* LunchPhaseCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/LunchPhaseCalculator.swift; sourceTree = "<group>"; };
-		706A1619746A36E4A9BACECC /* AppGroupConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/AppGroupConstants.swift; sourceTree = "<group>"; };
-		4E648FEA56B3CB72B91EDCA7 /* SharedAttendanceCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/SharedAttendanceCache.swift; sourceTree = "<group>"; };
-		FAE2C64F4223F63670CE57AD /* SharedKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/SharedKeychain.swift; sourceTree = "<group>"; };
-		7469E06042C974E1A4112FDB /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Hasenwacht/GoogleService-Info.plist; sourceTree = "<group>"; };
-		D11C66807BB356D9FCF42093 /* HasenwachtWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HasenwachtWidgetBundle.swift; sourceTree = "<group>"; };
-		366FF756D105DA3BCC9DFEC4 /* AttendanceEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceEntry.swift; sourceTree = "<group>"; };
-		BFCA9B140C8B1B0ECA4D1E8A /* AttendanceTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceTimelineProvider.swift; sourceTree = "<group>"; };
-		534B3C17063665A1F6B3C0E2 /* AttendanceWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceWidget.swift; sourceTree = "<group>"; };
-		C5364FD5EE9ECD874812EBE8 /* AttendanceWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceWidgetView.swift; sourceTree = "<group>"; };
-		534E8AFC8D95192E9F665226 /* ToggleAttendanceIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleAttendanceIntent.swift; sourceTree = "<group>"; };
-		3EF36AA7717FA8799959E0DB /* WidgetDS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDS.swift; sourceTree = "<group>"; };
-		EF7C3E1A356C48BD668945BB /* FirestoreRESTClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreRESTClient.swift; sourceTree = "<group>"; };
-		564C7D0E44E5983B8E47F653 /* FirebaseTokenRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseTokenRefresher.swift; sourceTree = "<group>"; };
-		0A6147FC07127728B28D93C0 /* FirebaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseConfig.swift; sourceTree = "<group>"; };
-		DB1BE8FDA5F304AE78CA6C96 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		84DD58BD45CC73475EE1740C /* HasenwachtWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HasenwachtWidget.entitlements; sourceTree = "<group>"; };
-/* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		BCBE07FB2FA915C70004EB6F /* Hasenwacht */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Hasenwacht;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXContainerItemProxy section */
 		2385A7EE018FAE701BB898A5 /* PBXContainerItemProxy */ = {
@@ -81,12 +48,45 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				C48DE33F48DDE0E0A6AB12AF /* HasenwachtWidgetExtension.appex in Embed Foundation Extensions */,
+				C48DE33F48DDE0E0A6AB12AF /* HasenwachtWidget.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0A6147FC07127728B28D93C0 /* FirebaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseConfig.swift; sourceTree = "<group>"; };
+		366FF756D105DA3BCC9DFEC4 /* AttendanceEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceEntry.swift; sourceTree = "<group>"; };
+		3EF36AA7717FA8799959E0DB /* WidgetDS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDS.swift; sourceTree = "<group>"; };
+		4E648FEA56B3CB72B91EDCA7 /* Hasenwacht/Shared/SharedAttendanceCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/SharedAttendanceCache.swift; sourceTree = "<group>"; };
+		534B3C17063665A1F6B3C0E2 /* AttendanceWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceWidget.swift; sourceTree = "<group>"; };
+		534E8AFC8D95192E9F665226 /* ToggleAttendanceIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleAttendanceIntent.swift; sourceTree = "<group>"; };
+		564C7D0E44E5983B8E47F653 /* FirebaseTokenRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseTokenRefresher.swift; sourceTree = "<group>"; };
+		5CE4E5C7016F7995D6482192 /* HasenwachtWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HasenwachtWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		706A1619746A36E4A9BACECC /* Hasenwacht/Shared/AppGroupConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/AppGroupConstants.swift; sourceTree = "<group>"; };
+		7469E06042C974E1A4112FDB /* Hasenwacht/GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Hasenwacht/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		7FB724780FDFEB6DF13ECAA9 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		84DD58BD45CC73475EE1740C /* HasenwachtWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HasenwachtWidget.entitlements; sourceTree = "<group>"; };
+		A9CE8ABC4DDB652CA7FDB839 /* Hasenwacht/Shared/HolidayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/HolidayService.swift; sourceTree = "<group>"; };
+		BCBE07F92FA915C70004EB6F /* Hasenwacht.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Hasenwacht.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BFCA9B140C8B1B0ECA4D1E8A /* AttendanceTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceTimelineProvider.swift; sourceTree = "<group>"; };
+		BFD8BA7801D1DE5EDA58D6AF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		C5364FD5EE9ECD874812EBE8 /* AttendanceWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceWidgetView.swift; sourceTree = "<group>"; };
+		D11C66807BB356D9FCF42093 /* HasenwachtWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HasenwachtWidgetBundle.swift; sourceTree = "<group>"; };
+		D3DE115DCCCD0223AB8A0055 /* Hasenwacht/Shared/LunchPhaseCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/LunchPhaseCalculator.swift; sourceTree = "<group>"; };
+		DB1BE8FDA5F304AE78CA6C96 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		EF7C3E1A356C48BD668945BB /* FirestoreRESTClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreRESTClient.swift; sourceTree = "<group>"; };
+		FAE2C64F4223F63670CE57AD /* Hasenwacht/Shared/SharedKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hasenwacht/Shared/SharedKeychain.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		BCBE07FB2FA915C70004EB6F /* Hasenwacht */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Hasenwacht;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		BCBE07F62FA915C70004EB6F /* Frameworks */ = {
@@ -111,24 +111,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		BCBE07F02FA915C70004EB6F = {
+		59A237249B0D2898D6EBBEC0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				BCBE07FB2FA915C70004EB6F /* Hasenwacht */,
-				8FE5633A4A817FE0323BEE48 /* HasenwachtWidget */,
-				5DD952B06284E95977EEB3B0 /* Shared (Widget Target) */,
-				59A237249B0D2898D6EBBEC0 /* Frameworks */,
-				BCBE07FA2FA915C70004EB6F /* Products */,
+				7FB724780FDFEB6DF13ECAA9 /* WidgetKit.framework */,
+				BFD8BA7801D1DE5EDA58D6AF /* SwiftUI.framework */,
 			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		BCBE07FA2FA915C70004EB6F /* Products */ = {
+		5DD952B06284E95977EEB3B0 /* Shared (Widget Target) */ = {
 			isa = PBXGroup;
 			children = (
-				BCBE07F92FA915C70004EB6F /* Hasenwacht.app */,
-				5CE4E5C7016F7995D6482192 /* HasenwachtWidgetExtension.appex */,
+				A9CE8ABC4DDB652CA7FDB839 /* Hasenwacht/Shared/HolidayService.swift */,
+				D3DE115DCCCD0223AB8A0055 /* Hasenwacht/Shared/LunchPhaseCalculator.swift */,
+				706A1619746A36E4A9BACECC /* Hasenwacht/Shared/AppGroupConstants.swift */,
+				4E648FEA56B3CB72B91EDCA7 /* Hasenwacht/Shared/SharedAttendanceCache.swift */,
+				FAE2C64F4223F63670CE57AD /* Hasenwacht/Shared/SharedKeychain.swift */,
+				7469E06042C974E1A4112FDB /* Hasenwacht/GoogleService-Info.plist */,
 			);
-			name = Products;
+			name = "Shared (Widget Target)";
 			sourceTree = "<group>";
 		};
 		8FE5633A4A817FE0323BEE48 /* HasenwachtWidget */ = {
@@ -150,26 +152,24 @@
 			path = HasenwachtWidget;
 			sourceTree = "<group>";
 		};
-		5DD952B06284E95977EEB3B0 /* Shared (Widget Target) */ = {
+		BCBE07F02FA915C70004EB6F = {
 			isa = PBXGroup;
 			children = (
-				A9CE8ABC4DDB652CA7FDB839 /* HolidayService.swift */,
-				D3DE115DCCCD0223AB8A0055 /* LunchPhaseCalculator.swift */,
-				706A1619746A36E4A9BACECC /* AppGroupConstants.swift */,
-				4E648FEA56B3CB72B91EDCA7 /* SharedAttendanceCache.swift */,
-				FAE2C64F4223F63670CE57AD /* SharedKeychain.swift */,
-				7469E06042C974E1A4112FDB /* GoogleService-Info.plist */,
+				BCBE07FB2FA915C70004EB6F /* Hasenwacht */,
+				8FE5633A4A817FE0323BEE48 /* HasenwachtWidget */,
+				5DD952B06284E95977EEB3B0 /* Shared (Widget Target) */,
+				59A237249B0D2898D6EBBEC0 /* Frameworks */,
+				BCBE07FA2FA915C70004EB6F /* Products */,
 			);
-			name = "Shared (Widget Target)";
 			sourceTree = "<group>";
 		};
-		59A237249B0D2898D6EBBEC0 /* Frameworks */ = {
+		BCBE07FA2FA915C70004EB6F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7FB724780FDFEB6DF13ECAA9 /* WidgetKit.framework */,
-				BFD8BA7801D1DE5EDA58D6AF /* SwiftUI.framework */,
+				BCBE07F92FA915C70004EB6F /* Hasenwacht.app */,
+				5CE4E5C7016F7995D6482192 /* HasenwachtWidget.appex */,
 			);
-			name = Frameworks;
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -216,7 +216,7 @@
 			);
 			name = HasenwachtWidget;
 			productName = HasenwachtWidget;
-			productReference = 5CE4E5C7016F7995D6482192 /* HasenwachtWidgetExtension.appex */;
+			productReference = 5CE4E5C7016F7995D6482192 /* HasenwachtWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -260,15 +260,15 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXTargetDependency section */
-		C4FC820FB2D80EB7B9B2E262 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = E5C4D6C8175ADA8A0BABDC44 /* HasenwachtWidget */;
-			targetProxy = 2385A7EE018FAE701BB898A5 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXResourcesBuildPhase section */
+		23748E214A5A617F7BD254F4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0F3CD8193B7D2B804701E10B /* Hasenwacht/GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BCBE07F72FA915C70004EB6F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -276,24 +276,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		23748E214A5A617F7BD254F4 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				0F3CD8193B7D2B804701E10B /* GoogleService-Info.plist in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		BCBE07F52FA915C70004EB6F /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		6B5D6FAE634EBA925418745D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -308,17 +293,90 @@
 				E01CA9139D399ED3CDFBEFA5 /* FirestoreRESTClient.swift in Sources */,
 				EF9D55EB1AF2F5C4AB4DF197 /* FirebaseTokenRefresher.swift in Sources */,
 				F855D7C1E00A8BC452CD79E6 /* FirebaseConfig.swift in Sources */,
-				87F9224632293C8D9E6DD9F1 /* HolidayService.swift in Sources */,
-				016C255ABD52CCEFEC368A23 /* LunchPhaseCalculator.swift in Sources */,
-				C2ECA8013C8BEB6CCDA45333 /* AppGroupConstants.swift in Sources */,
-				78FBD2F0BCF0FD46489E53CF /* SharedAttendanceCache.swift in Sources */,
-				7E77EB1E34587385C7691009 /* SharedKeychain.swift in Sources */,
+				87F9224632293C8D9E6DD9F1 /* Hasenwacht/Shared/HolidayService.swift in Sources */,
+				016C255ABD52CCEFEC368A23 /* Hasenwacht/Shared/LunchPhaseCalculator.swift in Sources */,
+				C2ECA8013C8BEB6CCDA45333 /* Hasenwacht/Shared/AppGroupConstants.swift in Sources */,
+				78FBD2F0BCF0FD46489E53CF /* Hasenwacht/Shared/SharedAttendanceCache.swift in Sources */,
+				7E77EB1E34587385C7691009 /* Hasenwacht/Shared/SharedKeychain.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BCBE07F52FA915C70004EB6F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		C4FC820FB2D80EB7B9B2E262 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E5C4D6C8175ADA8A0BABDC44 /* HasenwachtWidget */;
+			targetProxy = 2385A7EE018FAE701BB898A5 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		87E178E7015F00B7BC87A3C0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = HasenwachtWidget/HasenwachtWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 24;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HasenwachtWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.4.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marcelfelder.hasenwacht.HasenwachtWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		8CC85B72A8ADB7A04822643A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = HasenwachtWidget/HasenwachtWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 24;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HasenwachtWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.4.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marcelfelder.hasenwacht.HasenwachtWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		BCBE08022FA915C90004EB6F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -449,7 +507,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Hasenwacht/Hasenwacht.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 24;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -457,12 +515,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.marcelfelder.hasenwacht;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -486,7 +544,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Hasenwacht/Hasenwacht.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 24;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -494,12 +552,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.marcelfelder.hasenwacht;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -507,64 +565,6 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
-		8CC85B72A8ADB7A04822643A /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = HasenwachtWidget/HasenwachtWidget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = HasenwachtWidget/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.marcelfelder.hasenwacht.HasenwachtWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		87E178E7015F00B7BC87A3C0 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = HasenwachtWidget/HasenwachtWidget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = HasenwachtWidget/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.3.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.marcelfelder.hasenwacht.HasenwachtWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;

@@ -34,6 +34,12 @@ final class LunchDaysViewModel: ObservableObject {
     private var recurringAbsences: [String: [Int]] = [:]
     private var currentUserId: String = ""
 
+    /// `days`, indiziert auf den Tagesbeginn — damit `days(forWeekOffset:)`
+    /// (wird aus der View bei jedem Render aufgerufen) nicht bei jedem Aufruf
+    /// linear durch `days` scannen muss. Wird nur bei einem echten Rebuild
+    /// neu aufgebaut, nicht bei jedem Render.
+    private var daysByDate: [Date: DayViewModel] = [:]
+
     /// Zählt wie viele der 3 Listener mindestens einmal gefeuert haben.
     /// rebuildDays() wird erst aufgerufen wenn alle 3 bereit sind.
     private var readyListeners: Set<String> = []
@@ -135,6 +141,7 @@ final class LunchDaysViewModel: ObservableObject {
         phaseUpdateTimer?.invalidate()
         phaseUpdateTimer = nil
         days = []
+        daysByDate = [:]
         allUsers = []
         attendances = []
         lunchDays = []
@@ -249,10 +256,34 @@ final class LunchDaysViewModel: ObservableObject {
     // MARK: - Day-Berechnung
 
     /// Baut die DayViewModels aus den aktuellen User- und Attendance-Daten neu auf.
+    ///
+    /// `attendances`/`lunchDays` werden hier einmal pro Rebuild nach Tag indiziert,
+    /// statt dass `buildDayViewModel(for:)` für jeden einzelnen Werktag erneut linear
+    /// durch die kompletten Arrays scannt (`nextWorkdays()` wächst bewusst unbegrenzt
+    /// mit der App-Nutzungsdauer — ohne Indizierung würde ein Rebuild nach Monaten
+    /// Nutzung O(Tage × Attendances) kosten statt O(Tage + Attendances)).
     private func rebuildDays() {
         let workdays = Self.nextWorkdays()
+        let calendar = Calendar.current
+
+        var lunchDaysByDay: [Date: LunchDay] = [:]
+        lunchDaysByDay.reserveCapacity(lunchDays.count)
+        for lunchDay in lunchDays {
+            lunchDaysByDay[calendar.startOfDay(for: lunchDay.date)] = lunchDay
+        }
+
+        var attendancesByDay: [Date: [Attendance]] = [:]
+        attendancesByDay.reserveCapacity(attendances.count)
+        for attendance in attendances {
+            attendancesByDay[calendar.startOfDay(for: attendance.date), default: []].append(attendance)
+        }
+
         var newDays = workdays.map { date in
-            buildDayViewModel(for: date)
+            buildDayViewModel(
+                for: date,
+                lunchDaysByDay: lunchDaysByDay,
+                attendancesByDay: attendancesByDay
+            )
         }
 
         // "Nächstes Mittagessen" markieren = erster Tag, der noch bevorsteht.
@@ -264,8 +295,15 @@ final class LunchDaysViewModel: ObservableObject {
             newDays[nextLunchIndex].isNextRelevantDay = true
         }
 
+        var newDaysByDate: [Date: DayViewModel] = [:]
+        newDaysByDate.reserveCapacity(newDays.count)
+        for day in newDays {
+            newDaysByDate[calendar.startOfDay(for: day.date)] = day
+        }
+
         Task { @MainActor in
             self.days = newDays
+            self.daysByDate = newDaysByDate
             self.isLoading = false
             self.pushWidgetCache(from: newDays)
         }
@@ -298,15 +336,20 @@ final class LunchDaysViewModel: ObservableObject {
         WidgetCenter.shared.reloadTimelines(ofKind: AppGroupConstants.widgetKind)
     }
 
-    private func buildDayViewModel(for date: Date) -> DayViewModel {
+    private func buildDayViewModel(
+        for date: Date,
+        lunchDaysByDay: [Date: LunchDay],
+        attendancesByDay: [Date: [Attendance]]
+    ) -> DayViewModel {
         let calendar = Calendar.current
+        let dayKey = calendar.startOfDay(for: date)
 
         let holiday = holidayService.holiday(for: date)
-        let lunchDayOverride = lunchDays.first { calendar.isDate($0.date, inSameDayAs: date) }
+        let lunchDayOverride = lunchDaysByDay[dayKey]
         let forceLunch = lunchDayOverride?.forceLunch ?? false
         let isLunchHappening = (holiday == nil) || forceLunch
 
-        let attendancesForDay = attendances.filter { calendar.isDate($0.date, inSameDayAs: date) }
+        let attendancesForDay = attendancesByDay[dayKey] ?? []
 
         // Opt-Out-UserIds aus expliziten Attendance-Dokumenten (isAttending=false)
         let explicitOptOuts = Set(
@@ -498,14 +541,26 @@ final class LunchDaysViewModel: ObservableObject {
         }
     }
 
+    /// O(1)-Lookup für einen einzelnen Tag (statt `days.first { Calendar...isDate }`,
+    /// das in mehreren Views als computed property bei jedem Render linear durch
+    /// `days` scannt).
+    func day(for date: Date) -> DayViewModel? {
+        daysByDate[Calendar.current.startOfDay(for: date)]
+    }
+
     /// Liefert die DayViewModels für eine bestimmte Woche (absoluter offset ab earliestMonday).
+    ///
+    /// Nutzt `daysByDate` (O(1) pro Tag) statt linear durch `days` zu suchen — diese
+    /// Methode wird direkt aus der View (computed property) bei jedem Render aufgerufen,
+    /// nicht nur bei Datenänderungen, eine lineare Suche würde sich also mit jedem Scroll/
+    /// Animation-Tick wiederholen.
     func days(forWeekOffset offset: Int) -> [DayViewModel] {
         let targetDates = Self.weekDates(offset: offset)
         let calendar = Calendar.current
         let installDate = calendar.startOfDay(for: OnboardingService.shared.firstAppUseDate)
 
         return targetDates.map { date in
-            if let match = days.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
+            if let match = daysByDate[calendar.startOfDay(for: date)] {
                 return match
             }
             // Tag liegt vor App-Installation → keine Daten verfügbar

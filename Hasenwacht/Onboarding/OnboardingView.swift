@@ -131,10 +131,9 @@ struct OnboardingView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(slides[min(currentIndex, lastInfoIndex)].accentColor)
                             .frame(maxWidth: .infinity).frame(height: 54)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
                     }
+                    .buttonStyle(.glassProminent)
+                    .tint(.white)
                     .padding(.horizontal, 32)
                 } else {
                     Color.clear.frame(height: 54)
@@ -184,8 +183,8 @@ struct OnboardingView: View {
                 )
                 .signInWithAppleButtonStyle(.white)
                 .frame(height: 54)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+                .dsShadow(DS.Shadow.cardElevated)
                 .disabled(isProcessingLogin)
                 .padding(.horizontal, 32)
 
@@ -331,15 +330,12 @@ private struct ProfileSetupStep: View {
                     if isSaving { ProgressView().tint(Color(red: 0.13, green: 0.70, blue: 0.44)) }
                     Text(isSaving ? "Wird gespeichert…" : "Loslegen")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(canSave
-                            ? Color(red: 0.13, green: 0.70, blue: 0.44)
-                            : Color.gray)
+                        .foregroundStyle(Color(red: 0.13, green: 0.70, blue: 0.44))
                 }
                 .frame(maxWidth: .infinity).frame(height: 54)
-                .background(Color.white.opacity(canSave ? 1 : 0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
             }
+            .buttonStyle(.glassProminent)
+            .tint(.white)
             .disabled(!canSave)
             .padding(.horizontal, 32)
             .padding(.bottom, 60)
@@ -360,8 +356,8 @@ private struct ProfileSetupStep: View {
             .foregroundStyle(.primary)
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .shadow(color: Color.black.opacity(0.08), radius: 4, y: 2)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+            .dsShadow(DS.Shadow.subtle)
     }
 
     private func prefill() {

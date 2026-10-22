@@ -14,7 +14,7 @@ import UIKit
 enum WidgetDS {
 
     enum Colors {
-        static let success = Color(lightHex: "1D9E75", darkHex: "3DC495")
+        static let success = Color(lightHex: "21B270", darkHex: "4ADE93")
         static let danger = Color(lightHex: "B33A3A", darkHex: "E06060")
         static let warning = Color(lightHex: "BA7517", darkHex: "D89A3D")
         static let textPrimary = Color(lightHex: "2C2C2A", darkHex: "F2F1ED")
@@ -26,18 +26,28 @@ enum WidgetDS {
     /// Jeder Stop ist selbst schon light/dark-adaptiv (siehe Color(lightHex:darkHex:)),
     /// ein Verblassen bei .locked/.lunchOver passiert über einen dunklen Scrim-Overlay
     /// statt über separate Gradient-Sets — hält die Farbsemantik konsistent.
+    /// `attending`/`notAttending` sind 1:1 aus `DS.Colors.success`/`.primary` im App-
+    /// Target abgeleitet, damit der Widget farblich zur App gehört statt generisches
+    /// Grün/Rot zu zeigen.
     enum Gradients {
         static let attending: [Color] = [
-            Color(lightHex: "34D399", darkHex: "10B981"),
-            Color(lightHex: "0D9488", darkHex: "115E59")
+            Color(lightHex: "61E0A0", darkHex: "4ADE93"),
+            Color(lightHex: "188C59", darkHex: "21B270")
         ]
         static let notAttending: [Color] = [
-            Color(lightHex: "FB7185", darkHex: "F43F5E"),
-            Color(lightHex: "BE123C", darkHex: "7F1D1D")
+            Color(lightHex: "D85A30", darkHex: "E97A50"),
+            Color(lightHex: "993C1D", darkHex: "E8A488")
         ]
         static let neutral: [Color] = [
             Color(lightHex: "94A3B8", darkHex: "475569"),
             Color(lightHex: "475569", darkHex: "1E293B")
+        ]
+        /// Für die Wochenübersicht (mehrere Tage, kein einzelner An-/Abgemeldet-
+        /// Zustand) — markenfarbig statt neutral, damit die grosse Kachel nicht
+        /// wie ein Fehler-/Platzhalterzustand wirkt.
+        static let week: [Color] = [
+            Color(lightHex: "D85A30", darkHex: "E97A50"),
+            Color(lightHex: "7A2E14", darkHex: "5C2410")
         ]
     }
 

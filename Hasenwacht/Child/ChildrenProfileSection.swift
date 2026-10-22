@@ -39,17 +39,10 @@ struct ChildrenProfileSection: View {
                 Button {
                     showAddSheet = true
                 } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Hinzufügen")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .foregroundStyle(DS.Colors.primary)
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(DS.Colors.primarySurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    DSPillLabel(icon: "plus", text: "Hinzufügen", height: 26)
                 }
+                .buttonStyle(.glass)
+                .tint(DS.Colors.primary)
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
             .background(DS.Colors.background)
@@ -76,9 +69,9 @@ struct ChildrenProfileSection: View {
                 }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
         .sheet(isPresented: $showAddSheet) {
             ChildEditSheet(
                 child: nil,
@@ -164,10 +157,10 @@ struct ChildrenProfileSection: View {
                     } label: {
                         Image(systemName: "trash")
                             .font(.system(size: 13))
-                            .foregroundStyle(DS.Colors.textTertiary)
                             .frame(width: 32, height: 32)
                     }
-                    .buttonStyle(BorderlessButtonStyle())
+                    .buttonStyle(.glass)
+                    .tint(DS.Colors.textTertiary)
                 }
 
                 Image(systemName: "chevron.right")
@@ -232,8 +225,8 @@ struct ChildEditSheet: View {
                             .padding(.horizontal, 16).padding(.vertical, 14)
                             .background(DS.Colors.background)
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
 
                         // Hauptbetreuer Info
                         VStack(spacing: 0) {
@@ -251,8 +244,8 @@ struct ChildEditSheet: View {
                             .padding(.horizontal, 16).padding(.vertical, 14)
                             .background(DS.Colors.background)
                         }
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
 
                         // Weitere Eltern
                         if isPrimaryParent {
@@ -287,8 +280,8 @@ struct ChildEditSheet: View {
                                 .padding(.horizontal, 16).padding(.vertical, 10)
                                 .background(DS.Colors.surfaceAlt)
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 20))
-                            .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+                            .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
                         }
 
                         if let err = errorMessage {

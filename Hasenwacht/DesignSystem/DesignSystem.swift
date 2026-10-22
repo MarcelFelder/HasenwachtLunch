@@ -22,7 +22,9 @@ enum DS {
         static let primarySurface = Color(lightHex: "FAECE7", darkHex: "3D2A21")
 
         /// Status-Farben (Eintragung dabei / nicht dabei)
-        static let success = Color(lightHex: "1D9E75", darkHex: "3DC495")
+        static let success = Color(lightHex: "21B270", darkHex: "4ADE93")
+        static let successLight = Color(lightHex: "61E0A0", darkHex: "4ADE93")
+        static let successDark = Color(lightHex: "188C59", darkHex: "21B270")
         static let successSurface = Color(lightHex: "E1F5EE", darkHex: "12332A")
         static let danger = Color(lightHex: "B33A3A", darkHex: "E06060")
         static let dangerSurface = Color(lightHex: "FCEBEB", darkHex: "3A1E1E")
@@ -48,13 +50,25 @@ enum DS {
 
     // MARK: - Schriftgrössen
 
+    /// Basiert auf Apples semantischen Text-Styles (`.title2`, `.footnote`, …) statt fixer
+    /// Pixelgrössen, damit die Schrift mit der iOS-Systemeinstellung "Textgrösse" mitskaliert
+    /// (Dynamic Type/Bedienungshilfen) statt bei jeder Einstellung gleich gross zu bleiben.
+    /// Die Styles sind so gewählt, dass ihre Standardgrösse möglichst nah an der bisherigen
+    /// Pixelgrösse liegt (z.B. `.footnote` = 13pt, `.caption2` = 11pt).
     enum Typography {
-        static let title = Font.system(size: 24, weight: .medium)
-        static let heading = Font.system(size: 20, weight: .medium)
-        static let subheading = Font.system(size: 17, weight: .medium)
-        static let body = Font.system(size: 15, weight: .regular)
-        static let caption = Font.system(size: 13, weight: .regular)
-        static let small = Font.system(size: 12, weight: .medium)
+        static let largeTitle = Font.system(.title, design: .default).weight(.bold)
+        static let title = Font.system(.title2, design: .default).weight(.medium)
+        static let heading = Font.system(.title3, design: .default).weight(.medium)
+        static let subheading = Font.system(.headline, design: .default).weight(.medium)
+        static let body = Font.system(.subheadline, design: .default)
+        static let bodyBold = Font.system(.subheadline, design: .default).weight(.bold)
+        static let caption = Font.system(.footnote, design: .default)
+        static let small = Font.system(.caption, design: .default).weight(.medium)
+        static let smallBold = Font.system(.caption, design: .default).weight(.semibold)
+        static let micro = Font.system(.caption2, design: .default).weight(.medium)
+        static let microBold = Font.system(.caption2, design: .default).weight(.semibold)
+        /// Schmaler Kicker-Text in Kapitälchen-Optik (z.B. "LUNCH" über dem Titel)
+        static let kicker = Font.system(.caption2, design: .default).weight(.bold)
     }
 
     // MARK: - Eckenrundungen
@@ -81,6 +95,13 @@ enum DS {
     // MARK: - Schatten
 
     enum Shadow {
+        /// Sehr leichter Schatten für dezente/gedimmte Karten (z.B. Vergangenheit, Feiertage)
+        static let subtle = ShadowStyle(
+            color: Color.black.opacity(0.04),
+            radius: 4,
+            x: 0,
+            y: 2
+        )
         static let card = ShadowStyle(
             color: Color.black.opacity(0.08),
             radius: 12,

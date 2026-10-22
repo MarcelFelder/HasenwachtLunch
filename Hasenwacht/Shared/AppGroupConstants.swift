@@ -7,7 +7,9 @@
 
 import Foundation
 
-enum AppGroupConstants {
+/// `nonisolated`: reine Konstanten/Lookup, wird aus Main-Actor- (App) und
+/// Hintergrund-Kontexten (Widget-TaskGroups, AppIntents) gelesen.
+nonisolated enum AppGroupConstants {
 
     /// App-Group-Container für nicht-sensitive, geteilte Daten (UserDefaults-Suite).
     /// Muss identisch mit dem "App Groups"-Entitlement in beiden Targets sein.

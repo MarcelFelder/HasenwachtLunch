@@ -96,12 +96,11 @@ struct LunchOverviewView: View {
                         .font(.system(size: 13))
                         .foregroundStyle(.white)
                     Text("App war in dieser Woche noch nicht installiert")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(DS.Typography.small)
                         .foregroundStyle(.white)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(Color(hex: "2C2C2A").opacity(0.88))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .glassEffect(.regular.tint(.black.opacity(0.55)), in: .rect(cornerRadius: DS.Radius.lg))
                 .padding(.bottom, 24)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -115,11 +114,11 @@ struct LunchOverviewView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("LUNCH")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(DS.Typography.kicker)
                         .foregroundStyle(DS.Colors.primary)
                         .tracking(2.5)
                     Text("Anmeldung")
-                        .font(.system(size: 26, weight: .bold))
+                        .font(DS.Typography.largeTitle)
                         .foregroundStyle(DS.Colors.textPrimary)
                 }
                 Spacer()
@@ -135,52 +134,46 @@ struct LunchOverviewView: View {
     }
 
     private var weekSwitcher: some View {
-        HStack(spacing: 4) {
-            Button {
-                navigateBack()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(weekOffset == minWeekOffset ? DS.Colors.textTertiary : DS.Colors.textSecondary)
-                    .frame(width: 44, height: 44)
-                    .background(weekOffset == minWeekOffset ? Color.clear : DS.Colors.background)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: weekOffset > minWeekOffset ? Color.black.opacity(0.06) : Color.clear,
-                            radius: 2, y: 1)
+        GlassEffectContainer(spacing: 4) {
+            HStack(spacing: 4) {
+                Button {
+                    navigateBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(width: 40, height: 40)
+                }
+                .buttonStyle(.glass)
+                .tint(weekOffset == minWeekOffset ? DS.Colors.textTertiary : DS.Colors.textSecondary)
+                .disabled(weekOffset == minWeekOffset)
+
+                Spacer()
+
+                VStack(spacing: 2) {
+                    Text(weekLabel)
+                        .font(DS.Typography.bodyBold)
+                        .foregroundStyle(DS.Colors.textPrimary)
+                    Text(weekDateRange)
+                        .font(DS.Typography.small)
+                        .foregroundStyle(DS.Colors.textSecondary)
+                }
+
+                Spacer()
+
+                Button {
+                    if weekOffset < maxWeekOffset { weekOffset += 1 }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(width: 40, height: 40)
+                }
+                .buttonStyle(.glass)
+                .tint(weekOffset < maxWeekOffset ? DS.Colors.textSecondary : DS.Colors.textTertiary)
+                .disabled(weekOffset >= maxWeekOffset)
             }
-            .disabled(weekOffset == minWeekOffset)
-
-            Spacer()
-
-            VStack(spacing: 2) {
-                Text(weekLabel)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(DS.Colors.textPrimary)
-                Text(weekDateRange)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(DS.Colors.textSecondary)
-            }
-
-            Spacer()
-
-            Button {
-                if weekOffset < maxWeekOffset { weekOffset += 1 }
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(weekOffset < maxWeekOffset ? DS.Colors.textSecondary : DS.Colors.textTertiary)
-                    .frame(width: 44, height: 44)
-                    .background(weekOffset < maxWeekOffset ? DS.Colors.background : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: weekOffset < maxWeekOffset ? Color.black.opacity(0.06) : Color.clear,
-                            radius: 2, y: 1)
-            }
-            .disabled(weekOffset >= maxWeekOffset)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 6)
-        .background(DS.Colors.surfaceAlt)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     // MARK: - Tagesliste
@@ -203,7 +196,7 @@ struct LunchOverviewView: View {
             }
 
             Text("Standardmässig bist du angemeldet. Abmeldung bis 14:00 Uhr am Vortag.")
-                .font(.system(size: 11))
+                .font(DS.Typography.micro)
                 .foregroundStyle(DS.Colors.textTertiary)
                 .multilineTextAlignment(.center)
                 .padding(.top, 8)
@@ -326,10 +319,10 @@ private struct CancelledCard: View {
         .padding(16)
         .background(DS.Colors.dangerSurface.opacity(0.4))
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(DS.Colors.danger.opacity(0.25), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         .opacity(0.75)
     }
 }
@@ -367,11 +360,11 @@ private struct HolidayCard: View {
         .padding(16)
         .background(DS.Colors.warningSurface)
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(DS.Colors.warning.opacity(0.3), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .dsShadow(DS.Shadow.subtle)
     }
 }
 
@@ -402,7 +395,7 @@ private struct NoDataCard: View {
         }
         .padding(16)
         .background(DS.Colors.background.opacity(0.3))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         .opacity(0.45)
     }
 }
@@ -445,11 +438,18 @@ private struct TodayCard: View {
 
             if isLocked {
                 LockedStatusChip(isAttending: day.currentUserAttending)
+            } else if day.currentUserAttending {
+                Button(action: onToggle) {
+                    ActionPillLabel(isSignedUp: true)
+                }
+                .buttonStyle(.glass)
+                .tint(DS.Colors.success)
             } else {
                 Button(action: onToggle) {
-                    ActionPill(isSignedUp: day.currentUserAttending, variant: .dark)
+                    ActionPillLabel(isSignedUp: false)
                 }
-                .buttonStyle(ScaleButtonStyle())
+                .buttonStyle(.glassProminent)
+                .tint(DS.Colors.primary)
             }
         }
         .padding(16)
@@ -457,17 +457,13 @@ private struct TodayCard: View {
             LinearGradient(
                 colors: isLocked
                     ? [Color(white: 0.20), Color(white: 0.26)]
-                    : [Color(white: 0.11), Color(white: 0.19)],
+                    : [DS.Colors.primaryDark, Color(white: 0.12)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(
-            color: isLocked ? Color.black.opacity(0.10) : Color.black.opacity(0.20),
-            radius: isLocked ? 6 : 12,
-            y: isLocked ? 3 : 4
-        )
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .dsShadow(isLocked ? DS.Shadow.subtle : DS.Shadow.cardElevated)
     }
 }
 
@@ -481,17 +477,12 @@ private struct LockedStatusChip: View {
             Image(systemName: isAttending ? "checkmark" : "xmark")
                 .font(.system(size: 11, weight: .semibold))
             Text(isAttending ? "Dabei" : "Abgemeldet")
-                .font(.system(size: 12, weight: .semibold))
+                .font(DS.Typography.smallBold)
         }
         .foregroundStyle(Color.white.opacity(0.35))
         .padding(.horizontal, 12)
         .frame(height: 36)
-        .background(Color.white.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
+        .glassEffect(.regular.tint(.white.opacity(0.05)), in: .capsule)
     }
 }
 
@@ -528,7 +519,7 @@ private struct PastCard: View {
         }
         .padding(16)
         .background(DS.Colors.background.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         .opacity(0.6)
     }
 }
@@ -583,29 +574,44 @@ private struct UpcomingCard: View {
 
             Spacer(minLength: 0)
 
-            Button(action: onToggle) {
-                ActionPill(isSignedUp: day.currentUserAttending, variant: .light)
+            Group {
+                if day.currentUserAttending {
+                    Button(action: onToggle) {
+                        ActionPillLabel(isSignedUp: true)
+                    }
+                    .buttonStyle(.glass)
+                    .tint(DS.Colors.success)
+                } else {
+                    Button(action: onToggle) {
+                        ActionPillLabel(isSignedUp: false)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(DS.Colors.primary)
+                }
             }
-            .buttonStyle(ScaleButtonStyle())
             .disabled(isLocked)
             .opacity(isLocked ? 0.4 : 1.0)
         }
         .padding(16)
         .background(showCutoffBanner ? DS.Colors.warningSurface : DS.Colors.background)
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(
                     showCutoffBanner
                         ? DS.Colors.warning.opacity(0.3)
-                        : (isOptedOut ? DS.Colors.border.opacity(0.6) : Color.lunchEmerald.opacity(0.35)),
+                        : (isOptedOut ? DS.Colors.border.opacity(0.6) : DS.Colors.success.opacity(0.35)),
                     style: StrokeStyle(
                         lineWidth: isOptedOut && !showCutoffBanner ? 1 : (showCutoffBanner ? 1 : 2),
                         dash: isOptedOut && !showCutoffBanner ? [6, 4] : []
                     )
                 )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(isOptedOut || showCutoffBanner ? 0 : 0.04), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .shadow(
+            color: isOptedOut || showCutoffBanner ? .clear : DS.Shadow.subtle.color,
+            radius: DS.Shadow.subtle.radius,
+            y: DS.Shadow.subtle.y
+        )
     }
 }
 
@@ -644,7 +650,7 @@ private struct DateBlock: View {
         switch variant {
         case .dark:        return Color.white.opacity(0.1)
         case .todayLocked: return DS.Colors.surface
-        case .light:       return Color.lunchEmerald.opacity(0.08)
+        case .light:       return DS.Colors.success.opacity(0.1)
         case .past:        return DS.Colors.surfaceAlt
         case .optOut:      return DS.Colors.surface
         }
@@ -654,7 +660,7 @@ private struct DateBlock: View {
         switch variant {
         case .dark:        return Color.white.opacity(0.55)
         case .todayLocked: return DS.Colors.textTertiary
-        case .light:       return Color.lunchEmeraldDark
+        case .light:       return DS.Colors.successDark
         case .past:        return DS.Colors.textTertiary
         case .optOut:      return DS.Colors.textTertiary
         }
@@ -692,9 +698,10 @@ private struct AvatarStack: View {
     }
 }
 
-private struct ActionPill: View {
+/// Nur der Inhalt (Icon + Text) des Anmelden/Dabei-Buttons — Form, Füllung und
+/// Press-Feedback kommen vom system `.glass`/`.glassProminent` ButtonStyle.
+private struct ActionPillLabel: View {
     let isSignedUp: Bool
-    let variant: CardVariant
 
     var body: some View {
         HStack(spacing: 4) {
@@ -702,62 +709,15 @@ private struct ActionPill: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 12, weight: .bold))
                 Text("Dabei")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(DS.Typography.smallBold)
             } else {
                 Image(systemName: "plus")
                     .font(.system(size: 11, weight: .bold))
                 Text("Anmelden")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(DS.Typography.smallBold)
             }
         }
-        .foregroundStyle(pillForeground)
         .padding(.horizontal, 12)
         .frame(height: 36)
-        .background(pillBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(
-            Group {
-                if !isSignedUp {
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(DS.Colors.border, lineWidth: 1)
-                }
-            }
-        )
     }
-
-    private var pillForeground: Color {
-        switch (variant, isSignedUp) {
-        case (.dark, true):  return Color(white: 0.1)
-        case (.dark, false): return DS.Colors.textSecondary
-        case (.light, true): return Color.white
-        default:             return DS.Colors.textSecondary
-        }
-    }
-
-    private var pillBackground: Color {
-        switch (variant, isSignedUp) {
-        case (.dark, true):  return Color.lunchEmeraldLight
-        case (.dark, false): return Color.white.opacity(0.15)
-        case (.light, true): return Color.lunchEmerald
-        default:             return DS.Colors.surface
-        }
-    }
-}
-
-// MARK: - Button Style
-
-private struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Farb-Konstanten
-
-private extension Color {
-    static let lunchEmerald      = Color(red: 0.13, green: 0.70, blue: 0.44)
-    static let lunchEmeraldDark  = Color(red: 0.09, green: 0.55, blue: 0.34)
-    static let lunchEmeraldLight = Color(red: 0.38, green: 0.88, blue: 0.58)
 }

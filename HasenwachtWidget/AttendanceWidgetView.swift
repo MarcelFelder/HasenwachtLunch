@@ -49,6 +49,8 @@ struct AttendanceWidgetView: View {
             return WidgetDS.Gradients.neutral
         case .attendance(let state):
             return state.isAttending ? WidgetDS.Gradients.attending : WidgetDS.Gradients.notAttending
+        case .week:
+            return WidgetDS.Gradients.week
         }
     }
 
@@ -62,10 +64,12 @@ struct AttendanceWidgetView: View {
             case .locked:    return 0.35
             case .lunchOver: return 0.55
             }
+        case .week:
+            return 0.05
         }
     }
 
-    // MARK: - Karten-Inhalt (systemSmall / systemMedium)
+    // MARK: - Karten-Inhalt (systemSmall / systemLarge)
 
     @ViewBuilder
     private var cardContent: some View {
@@ -75,7 +79,9 @@ struct AttendanceWidgetView: View {
         case .error(let message):
             errorCard(message)
         case .attendance(let state):
-            attendanceCard(state)
+            smallCard(state)
+        case .week(let states):
+            weekCard(states)
         }
     }
 
@@ -108,15 +114,6 @@ struct AttendanceWidgetView: View {
         .widgetURL(URL(string: "hasenwacht://open"))
     }
 
-    @ViewBuilder
-    private func attendanceCard(_ state: AttendanceDisplayState) -> some View {
-        if family == .systemMedium {
-            mediumCard(state)
-        } else {
-            smallCard(state)
-        }
-    }
-
     // MARK: - systemSmall: die ganze Kachel ist der Toggle
 
     @ViewBuilder
@@ -124,8 +121,13 @@ struct AttendanceWidgetView: View {
         let visual = visual(for: state)
         let tile = VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(state.date, format: .dateTime.weekday(.abbreviated))
-                    .font(WidgetDS.Typography.title)
+                // Explizit "HEUTE"/"MORGEN" statt nur des Wochentags — sonst ist beim
+                // Blick aufs Widget nicht klar, für welchen Tag man sich gerade an-
+                // oder abmeldet (besonders relevant nach dem 14-Uhr-Cutoff, wenn der
+                // angezeigte Tag "lautlos" von heute auf morgen springt).
+                Text(relativeDayLabel(for: state.date))
+                    .font(WidgetDS.Typography.caption2)
+                    .tracking(1.2)
                 Spacer()
                 if state.isStale {
                     GlassPill(systemImage: "wifi.slash", text: nil)
@@ -144,9 +146,11 @@ struct AttendanceWidgetView: View {
 
             Text(visual.title)
                 .font(WidgetDS.Typography.subheading)
-            Text(state.date, format: .dateTime.day().month(.abbreviated))
+            Text(state.date, format: .dateTime.weekday(.wide).day().month(.abbreviated))
                 .font(WidgetDS.Typography.caption)
                 .opacity(0.85)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
 
             if let badge = contextBadge(state) {
                 badge
@@ -166,68 +170,101 @@ struct AttendanceWidgetView: View {
         }
     }
 
-    // MARK: - systemMedium: Info links, grosser Status + Aktion rechts
+    // MARK: - systemLarge: ganze Woche (Mo–Fr) mit Toggle pro Tag
 
-    private func mediumCard(_ state: AttendanceDisplayState) -> some View {
-        let visual = visual(for: state)
+    private func weekCard(_ states: [AttendanceDisplayState]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(weekLabel(for: states))
+                .font(WidgetDS.Typography.caption2)
+                .tracking(1.4)
+                .opacity(0.85)
 
-        return HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(state.date, format: .dateTime.weekday(.wide))
-                        .font(WidgetDS.Typography.title)
-                    if state.isStale {
-                        GlassPill(systemImage: "wifi.slash", text: nil)
-                    }
-                }
-                Text(state.date, format: .dateTime.day().month(.wide))
-                    .font(WidgetDS.Typography.caption)
-                    .opacity(0.85)
-
-                if let badge = contextBadge(state) {
-                    badge.padding(.top, 2)
-                }
-
-                Spacer(minLength: 4)
-
-                if let note = visual.phaseNote {
-                    Text(note)
-                        .font(WidgetDS.Typography.caption)
-                        .opacity(0.85)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-
-            VStack(spacing: 8) {
-                GlassIcon(systemName: visual.mainIcon, diameter: 44, badge: visual.phaseBadge)
-                Text(visual.title)
-                    .font(WidgetDS.Typography.body)
-
-                if state.phase == .bookable {
-                    Button(intent: ToggleAttendanceIntent(date: state.date, currentlyAttending: state.isAttending)) {
-                        HStack(spacing: 4) {
-                            Image(systemName: state.isAttending ? "xmark" : "checkmark")
-                                .font(.system(size: 10, weight: .bold))
-                            Text(state.isAttending ? "Abmelden" : "Anmelden")
-                        }
-                        .font(WidgetDS.Typography.caption)
-                    }
-                    .buttonStyle(.plain)
-                    .tint(.white)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.white.opacity(0.22), in: Capsule())
-                    .overlay(Capsule().strokeBorder(.white.opacity(0.4), lineWidth: 0.75))
+            VStack(spacing: 6) {
+                ForEach(states, id: \.date) { state in
+                    weekRow(state)
                 }
             }
         }
         .foregroundStyle(.white)
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    // MARK: - Feiertag / Gestrichen-Badge (gemeinsam für small & medium)
+    private func weekRow(_ state: AttendanceDisplayState) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(state.date, format: .dateTime.weekday(.abbreviated))
+                    .font(WidgetDS.Typography.caption)
+                    .opacity(0.75)
+                Text(state.date, format: .dateTime.day())
+                    .font(WidgetDS.Typography.body)
+            }
+            .frame(width: 32, alignment: .leading)
+
+            weekRowStatus(state)
+                .font(WidgetDS.Typography.caption)
+                .lineLimit(1)
+                .opacity(0.95)
+
+            Spacer(minLength: 4)
+
+            weekRowTrailing(state)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: WidgetDS.Radius.md))
+    }
+
+    private func weekRowStatus(_ state: AttendanceDisplayState) -> Text {
+        if state.isCancelled {
+            return Text("Gestrichen")
+        } else if let holidayName = state.holidayName {
+            return Text(holidayName)
+        } else {
+            return Text(state.isAttending ? "Dabei" : "Abgemeldet")
+        }
+    }
+
+    @ViewBuilder
+    private func weekRowTrailing(_ state: AttendanceDisplayState) -> some View {
+        if state.isCancelled || state.holidayName != nil {
+            Image(systemName: state.isCancelled ? "calendar.badge.minus" : "calendar.badge.exclamationmark")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.8))
+        } else if state.phase == .bookable {
+            Button(intent: ToggleAttendanceIntent(date: state.date, currentlyAttending: state.isAttending)) {
+                Image(systemName: state.isAttending ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 21, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Image(systemName: state.isAttending ? "checkmark.circle.fill" : "xmark.circle")
+                .font(.system(size: 21, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.5))
+        }
+    }
+
+    /// "DIESE WOCHE" / "NÄCHSTE WOCHE" — Vergleich der ISO-Kalenderwoche des ersten
+    /// angezeigten Tages mit der aktuellen Woche (statt eines gespeicherten Flags,
+    /// da sich das aus den Entry-Daten selbst ergibt).
+    private func weekLabel(for states: [AttendanceDisplayState]) -> String {
+        guard let first = states.first else { return "WOCHE" }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        let weeksApart = calendar.dateComponents([.weekOfYear], from: Date(), to: first.date).weekOfYear ?? 0
+        return weeksApart >= 1 ? "NÄCHSTE WOCHE" : "DIESE WOCHE"
+    }
+
+    /// "HEUTE" / "MORGEN" für den Tagestitel im kleinen Widget, sonst der Wochentag.
+    private func relativeDayLabel(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) { return "HEUTE" }
+        if calendar.isDateInTomorrow(date) { return "MORGEN" }
+        return date.formatted(.dateTime.weekday(.wide)).uppercased()
+    }
+
+    // MARK: - Feiertag / Gestrichen-Badge (für Small)
 
     private func contextBadge(_ state: AttendanceDisplayState) -> GlassPill? {
         if state.isCancelled {
@@ -284,6 +321,10 @@ struct AttendanceWidgetView: View {
             } else {
                 Label(label, systemImage: icon)
             }
+        case .week:
+            // Wird für .accessoryRectangular nie geliefert (der Provider gibt
+            // .week nur bei .systemLarge zurück) — nur für Exhaustiveness nötig.
+            Label("Mittagessen", systemImage: "fork.knife")
         }
     }
 }

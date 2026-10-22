@@ -14,7 +14,7 @@ struct AttendanceWidget: Widget {
             AttendanceWidgetView(entry: entry)
         }
         .configurationDisplayName("Mittagessen")
-        .description("Zeigt deinen An-/Abmeldestatus fürs nächste Mittagessen und erlaubt Umschalten per Tap.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
+        .description("Zeigt deinen An-/Abmeldestatus fürs Mittagessen (klein: nächster Tag, gross: ganze Woche) und erlaubt Umschalten per Tap.")
+        .supportedFamilies([.systemSmall, .systemLarge, .accessoryRectangular])
     }
 }

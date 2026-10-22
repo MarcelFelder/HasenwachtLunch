@@ -51,7 +51,7 @@ struct OnboardingSlideView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 6)
                             .background(
-                                RoundedRectangle(cornerRadius: 20)
+                                RoundedRectangle(cornerRadius: DS.Radius.xl)
                                     .fill(Color.white)
                                     .shadow(color: Color.black.opacity(0.18), radius: 6, y: 3)
                             )

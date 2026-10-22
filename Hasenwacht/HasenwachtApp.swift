@@ -38,6 +38,11 @@ struct HasenwachtApp: App {
                 .environment(currentUserService)
                 .environment(notificationService)
                 .environment(onboardingService)
+                // Dynamic Type ist überall aktiv (DS.Typography skaliert mit den
+                // System-Schriftgrössen), aber oben begrenzt: viele Chips/Pills/
+                // Date-Blocks haben feste Höhen/Breiten (z.B. 52×52, 36pt-Pills) und
+                // würden bei den extremsten Bedienungshilfen-Stufen Text abschneiden.
+                .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         }
     }
 }

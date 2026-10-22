@@ -192,21 +192,10 @@ struct ProfileView: View {
                 // Edit-Button oder Hint
                 if !isEditing {
                     Button { withAnimation { startEdit() } } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 11, weight: .medium))
-                            Text("Bearbeiten")
-                                .font(.system(size: 12, weight: .medium))
-                        }
-                        .foregroundStyle(Color.white.opacity(0.85))
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                        )
+                        DSPillLabel(icon: "pencil", text: "Bearbeiten", height: 28)
                     }
+                    .buttonStyle(.glass)
+                    .tint(.white)
                     .transition(.opacity)
                 } else {
                     Text("Tippe auf den Avatar um Foto zu ändern")
@@ -219,7 +208,7 @@ struct ProfileView: View {
             .padding(.top, 36)
             .padding(.bottom, 24)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         .shadow(color: DS.Colors.primary.opacity(0.35), radius: 14, y: 6)
     }
 
@@ -257,9 +246,9 @@ struct ProfileView: View {
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 
@@ -283,9 +272,9 @@ struct ProfileView: View {
                 .background(DS.Colors.background)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Settings Card
@@ -367,9 +356,9 @@ struct ProfileView: View {
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DS.Colors.background)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Help Card
@@ -398,9 +387,9 @@ struct ProfileView: View {
                 .background(DS.Colors.background)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(DS.Colors.border, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.xl).stroke(DS.Colors.border, lineWidth: 1))
+        .dsShadow(DS.Shadow.subtle)
     }
 
     // MARK: - Helpers

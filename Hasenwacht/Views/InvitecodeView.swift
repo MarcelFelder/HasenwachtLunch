@@ -72,8 +72,8 @@ struct InviteCodeView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 16)
                         .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: Color.black.opacity(0.10), radius: 6, y: 3)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+                        .dsShadow(DS.Shadow.card)
                         .onSubmit { Task { await submit() } }
 
                     if let error = errorMessage {
@@ -85,8 +85,7 @@ struct InviteCodeView: View {
                         }
                         .foregroundStyle(Color.white)
                         .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .glassEffect(.regular.tint(.white.opacity(0.08)), in: .rect(cornerRadius: DS.Radius.md))
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
@@ -105,13 +104,12 @@ struct InviteCodeView: View {
                         }
                         Text(isChecking ? "Wird geprüft…" : "Bestätigen")
                             .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(canSubmit ? DS.Colors.primary : Color.gray)
+                            .foregroundStyle(DS.Colors.primary)
                     }
                     .frame(maxWidth: .infinity).frame(height: 54)
-                    .background(Color.white.opacity(canSubmit ? 1.0 : 0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .shadow(color: Color.black.opacity(0.12), radius: 8, y: 4)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(.white)
                 .disabled(!canSubmit)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 20)
